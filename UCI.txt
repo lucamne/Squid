@@ -1,0 +1,69 @@
+********************
+UCI implementation
+********************
+
+DESCRIPTION
+- engine can always read stdin
+- all command strings received are terminated by '\n'
+- arbitrary whitespace is allowed
+- engine will not start calculating until receiving "go" command
+- engine is stateless so before search there will always be a position command to tell engine about current position
+- by default opening book is handled by GUI ("There is option for OwnBook but this engine does not implement that yet")
+- engine ignores unknown commands or unexpected commands
+
+MOVE FORMAT
+The move format is in long algebraic notation.
+A nullmove from the Engine to the GUI should be sent as 0000.
+Examples:  e2e4, e7e5, e1g1 (white short castling), e7e8q (for promotion)
+
+COMMANDS
+Note: not all UCI commands are implemented yet. This will be an expanding list
+	
+	GUI to Engine
+	- uci: tell engine to use uci mode. Engine will identify itself with id command and send
+		option command describing supported options. Engine should then send uciok, if GUI does not
+		receive uciok it will kill engine process
+	- isready: this is used to synchronize engine with GUI. Engine will send readyok when it is done processing
+		GUI commands. When searching engine will respond readyok immediately. GUI can use this command
+		to ping engine and make sure it is still alive.
+	- ucinewgame: tells engine next position is from new game. Essentially this will wipe the transposition table
+	- position [fen <fenstring> | startpos ]  moves <move1> .... <movei>: set up the position described in fenstring on the internal board and
+		play the moves on the internal chess board.
+		if the game was played  from the start position the string "startpos" will be sent
+		Note: no "new" command is needed. However, if this position is from a different game than
+		the last position sent to the engine, the GUI should have sent a "ucinewgame" inbetween.
+	- go: start calculating on current position. Currently, this will search the position until
+		a stop command is received. A number of commands can follow go to describe how to search
+		- depth <x>: search only to ply x
+		- movetime <x>: search for x milliseconds
+	- stop: stop calculating ASAP
+	- quit: kill program ASAP
+
+	Engine to GUI
+	- id:
+		name <x>: must be sent after receiving uci command
+		author <x>: must be sent after receiving uci command
+	- uciok: must be sent after id to tell GUI engine has sent all info and is ready
+	- readyok: must be sent after isready is received and engine has processed all inputs.
+		will return readyok while searching
+	- bestmove <move1>: sent after the engine has stopped searching. Every go command must have a following
+		bestmove command at some point
+	- info: sent whenever engine wants to update information about its internal parameters or search. Will be sent once
+		before sending bestmove command to describe results of search. Engine can send multiple infos in one command if desired
+		- depth <x>: search depth in plies
+		- cp <x>: score in centipawns
+
+	
+
+HANDSHAKE
+1. Engine boots
+	- init zobrist keys only once
+2. GUI sends "uci"
+3. Engine sends "id"
+4. Engine sends "uciok"
+5. GUI sends ucinewgame
+	- engine wipes transposition table
+6. GUI sends "go"
+7. Engine sends "info" while it searches
+8. GUI sends "stop"
+9. Engine sends "bestmove"
