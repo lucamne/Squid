@@ -1,26 +1,17 @@
-Version 2.0
-	- pawn data to eval metrics (isolated, doubled, etc.)
-	- castled in early game eval metric
-	- implement standard engine ui features
-		- show principle variation along with evaluation
-		- request fen of position
-		- manual make move and unmake move
-	- clean up yucky code and comments
+Improving eval
+	- pawn metrics: isolatde, doubled, passed, advanced
+Improving search
+	- add principle variation searching
+Improving move gen
+	- implement attack bitboards
+		- one bitboard for each piece containing attacked squares
 
+		this could make checking if a square is attacked much faster because you can just
+		or the bitboards together and mask the square you want
 
-FUTURE VERSIONS
-	Improving search
-		- add principle variation searching
-	Improving move gen
-		- implement attack bitboards
-			- one bitboard for each piece containing attacked squares
+		this could improve move ordering speed because we can start with most valuable enemy piece
+		then see which pieces are attacking, maybe?
 
-			this could make checking if a square is attacked much faster because you can just
-			or the bitboards together and mask the square you want
+		this could be used for static evaluation when doing a quiet search
 
-			this could improve move ordering speed because we can start with most valuable enemy piece
-			then see which pieces are attacking, maybe?
-
-			this could be used for static evaluation when doing a quiet search
-
-			this could be used to find king checks quickly and order them first
+		this could be used to find king checks quickly and order them first

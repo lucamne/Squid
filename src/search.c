@@ -216,18 +216,17 @@ Search_Result ab_search(AB_Params params) {
 }
 
 Search_Result iterative_ab_search(ULL search_time) {
-	ULL ms_cutoff = search_time + platform_get_time_ms();
+	ULL start_time = platform_get_time_ms();
+	ULL ms_cutoff = search_time + start_time;
 	char is_timed = 1;
-	if (search_time == 0)
-		is_timed = 0;
+	if (search_time == 0) is_timed = 0;
 	int depth = 1;
-	Search_Result prev_res = {0, 1, -1, -1, EMPTY};
-
 	const int asp_window = 50;
 	int alpha = N_INF - depth - 1 - asp_window;
 	int beta = INF + depth + 1 + asp_window;
+	Search_Result prev_res = {0, 1, -1, -1, EMPTY};
 
-	char info_buff[32];	
+	char info_buff[64];	
 	while(1) {
 		AB_Params p = {
 			depth, 
@@ -238,49 +237,40 @@ Search_Result iterative_ab_search(ULL search_time) {
 			prev_res.sa, 
 			prev_res.ta, 
 			prev_res.promo};
-
 		Search_Result res = ab_search(p);
-
-
-		// need to return something even if halt occurs
-		if (depth == 1)
-			prev_res = res;
-
 		if (res.halt) {
-			// send info
-			float cp = (float)prev_res.eval / 100.0f;
-			int d = depth;
+		// send info
+			if (res.sa == -1 || res.ta == -1)
+				res = prev_res;
+			float cp = (float)res.eval / 100.0f;
 			if (side_to_move == BLACK) cp = -cp;
-			if (d > 1) d--;
-			snprintf(info_buff, 32, "info depth %d cp %.2f\n", d, cp);
+			snprintf(info_buff, 64, "info depth %d cp %.2f time %lld\n", 
+					--depth, cp, platform_get_time_ms() - start_time);
 			platform_send_uci_command(info_buff);
-
-			return prev_res;
+			return res;
 		}
 
 		if (res.eval <= alpha) {
 			alpha -= asp_window;
 			continue;
 		}
-
 		if (res.eval >= beta) {
 			beta += asp_window;
 			continue;
 		}
+		prev_res = res;
 
 		// send info
 		float cp = (float)res.eval / 100.0f;
-		if (side_to_move == BLACK)
-			cp = -cp;
-		snprintf(info_buff, 32, "info depth %d cp %.2f\n", depth, cp);
+		if (side_to_move == BLACK) cp = -cp;
+		snprintf(info_buff, 64, "info depth %d cp %.2f time %lld\n", 
+				depth, cp, platform_get_time_ms() - start_time);
 		platform_send_uci_command(info_buff);
+		// checkmate
+		if (res.eval >= INF || res.eval <= N_INF) return res;
 
-		prev_res = res;
 		alpha = res.eval - asp_window;
 		beta = res.eval + asp_window;
-		// checkmate
-		if (res.eval >= INF || res.eval <= N_INF)
-			return res;
 		depth++;
 	}
 }
