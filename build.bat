@@ -4,7 +4,7 @@ setlocal ENABLEDELAYEDEXPANSION
 REM set sources and outputs
 set SOURCES=src\windows_main.c src\engine.c src\move_gen.c src\board.c src\search.c
 set INCLUDE=%INCLUDE% /Isrc
-set OUTPUT=bin\main.exe
+set OUTPUT=bin\squid-alpha.exe
 
 REM release build
 if "%~1"=="-r" (
@@ -28,7 +28,7 @@ REM ******Uncomment this for work pc******
 REM cd C:\Users\lnegris\projects\chess_engine_03
 
 REM ******This is for Luca's XPS laptop
-cd C:\Users\negri\source\chess_engine_03
+cd C:\Users\negri\source\repos\squid
 
 cl %CFLAGS% %SOURCES% /Fe:"%OUTPUT%" /link /INCREMENTAL:NO
 if errorlevel 1 (

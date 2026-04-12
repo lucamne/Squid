@@ -2,6 +2,7 @@
 #include "core.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 
 // Converts promo PIECE to ascii char
 static char promo_to_char(PIECE p) {
@@ -40,9 +41,12 @@ static void addr_to_str(int addr, char* buffer) {
 }
 
 
-// Search in a seperate thread until a stop command is received
-static void search_infinite(void* unused) {
-	Search_Result res = iterative_ab_search(0ULL);
+// Search in a seperate thread 
+// Input search time in ms or 0 for infinite search
+// If searching infinitely wait for halt command
+static void run_search(void* ms) {
+	Search_Result res = iterative_ab_search(*(ULL*)ms);
+	free(ms);
 
 	// send bestmove
 	char info_buff[16];
@@ -119,6 +123,7 @@ static int next_whitespace(const char* cmd) {
 // TODO remove when no longer needed
 #include "testing.c"
 
+// Process uci 'moves' command
 static void uci_moves(const char* cmd) {
 	ASSERT(next_token_eq(cmd, "moves"));
 	while (1) {
@@ -186,6 +191,38 @@ static void uci_position(const char* cmd) {
 	uci_moves(cmd);
 }
 
+// Process uci 'go' command
+static void uci_go(const char* cmd) {
+	ASSERT(next_token_eq(cmd, "go"));
+	uci_search_active = 1;
+	uci_halt_requested = 0;
+	// ms freed in run search
+	ULL* ms = malloc(sizeof(ULL));
+	*ms = 0ULL;
+
+	int ni = next_token_pos(cmd);
+	if (ni != -1) {
+		cmd += ni;
+		if (next_token_eq(cmd, "movetime")) {
+			ni = next_token_pos(cmd);
+			if (ni != -1) {
+				cmd += ni;
+				// extract 'movetime' number
+				int ws = next_whitespace(cmd);
+				for (int i = 0; i < ws; i++) {
+					if (cmd[i] < '0' || cmd[i] > '9') {
+						*ms = 0ULL;
+						break;
+					}
+					*ms *= 10;
+					*ms += cmd[i] - '0';
+				}
+			}
+		}
+	}
+	platform_create_thread(run_search, (void*)ms);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Engine API
 /// 
@@ -195,19 +232,19 @@ static void uci_position(const char* cmd) {
 void engine_send_uci_command(const char* cmd) {
 	ASSERT(cmd);
 	while (1) {
-
+		if (next_token_eq(cmd, "quit")) {
+			exit(0);
+		}
 		if (!uci_cmd_received) {
 			if (next_token_eq(cmd, "uci")) {
 				uci_cmd_received = 1;
-				platform_send_uci_command("id name RosieBot-1.0\nid author Luca Negris\n");
+				platform_send_uci_command("id name squid-alpha\nid author Luca Negris\n");
 				platform_send_uci_command("uciok\n");
 				return;
 			}
 
 		} else if (uci_pos_loaded && next_token_eq(cmd, "go")) {
-			uci_search_active = 1;
-			uci_halt_requested = 0;
-			platform_create_thread(search_infinite, NULL);
+			uci_go(cmd);
 			return;
 
 		} else if (uci_search_active && next_token_eq(cmd, "stop")) {
