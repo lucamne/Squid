@@ -264,4 +264,6 @@ void init(void) {
 	uci_pos_loaded = 0;
 	uci_search_active = 0;
 	uci_halt_requested = 0;
+
+	nodes_searched = 0;
 }

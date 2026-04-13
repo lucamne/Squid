@@ -51,9 +51,14 @@ Note: not all UCI commands are implemented yet. This will be an expanding list
 	- bestmove <move1>: sent after the engine has stopped searching. Every go command must have a following
 		bestmove command at some point
 	- info: sent whenever engine wants to update information about its internal parameters or search. Will be sent once
-		before sending bestmove command to describe results of search. Engine can send multiple infos in one command if desired
+		before sending bestmove command to describe results of search. Engine can send multiple infos in one command if desired.
+		All info relating to pv should be sent in one line.
 		- depth <x>: search depth in plies
-		- cp <x>: score in centipawns
+		- score:
+			- cp <x>: score in centipawns
+		- time <x>: time searched in ms. Sent together with pv
+		- nodes: nodes searched
+		- nps: nodes per second
 
 	
 

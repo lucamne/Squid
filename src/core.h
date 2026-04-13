@@ -77,6 +77,15 @@ typedef enum {
 	DL = 9
 } DIRECTION;
 
+/*
+// Linked list node in a search variation
+typdef struct {
+	int sa;
+	int ta;
+	PIECE promo;
+	Var_Move* next;
+} Var_Move; */
+
 // Result of search call
 typedef struct {
 	int eval;	// eval from side to move's perspective
@@ -84,9 +93,10 @@ typedef struct {
 	int sa;		// starting address and target address of best move
 	int ta;
 	PIECE promo;	// promotion piece if any
+	// Var_Move* var;	// variation linked list
 } Search_Result;
 
-// Represent a chess move
+// Info needed by the engine to execute a move
 typedef struct {
 	int sa;			// source address
 	int ta;			// target address
@@ -170,8 +180,11 @@ int history_cnt;
 // mask the lower part of hash with number of bits needed to represent
 // TTABLE_SIZE
 #define TTMOD 0b11111111111111111111111ull
-static TT_Entry ttable[TTABLE_SIZE];	// transposition table
+TT_Entry ttable[TTABLE_SIZE];		// transposition table
 					// should be wiped before new game
+
+ULL nodes_searched;			// number of nodes searched in current search
+					// should be reset at the start of search
 
 // used to track uci state
 int uci_cmd_received;			// has UCI 'uci' command been received

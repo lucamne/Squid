@@ -12,7 +12,7 @@
 // can be any value as long as sufficiently large
 #define N_INF -999999
 #define INF 999999
-
+#define INFO_BUFF_SIZE 256	// size of buffer for info output commands
 
 // search parameters
 typedef struct {
@@ -51,6 +51,7 @@ static void tt_add(NODE_TYPE nt, int depth, int eval, int sa, int ta, PIECE prom
 
 static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	int static_eval = evaluate();
+	nodes_searched++;
 
 	// stand pat
 	int best_value = static_eval;
@@ -216,17 +217,20 @@ Search_Result ab_search(AB_Params params) {
 }
 
 Search_Result iterative_ab_search(ULL search_time) {
-	ULL start_time = platform_get_time_ms();
+	nodes_searched = 0;
+	const ULL start_time = platform_get_time_ms();
 	ULL ms_cutoff = search_time + start_time;
-	char is_timed = 1;
-	if (search_time == 0) is_timed = 0;
-	int depth = 1;
+
 	const int asp_window = 50;
 	int alpha = N_INF - depth - 1 - asp_window;
 	int beta = INF + depth + 1 + asp_window;
-	Search_Result prev_res = {0, 1, -1, -1, EMPTY};
 
-	char info_buff[64];	
+	char is_timed = 1;
+	if (search_time == 0) is_timed = 0;
+	int depth = 1;
+	Search_Result prev_res = {0, 1, -1, -1, EMPTY, NULL};
+
+	char info_buff[INFO_BUFF_SIZE];	
 	while(1) {
 		AB_Params p = {
 			depth, 
@@ -238,14 +242,23 @@ Search_Result iterative_ab_search(ULL search_time) {
 			prev_res.ta, 
 			prev_res.promo};
 		Search_Result res = ab_search(p);
+		// statistics
+		ULL time_elapsed = platform_get_time_ms() - start_time;
+		if (!time_elapsed) time_elapsed = 1;
+		ULL nps = nodes_searched * 1000ULL / time_elapsed;
+		float cp = (float)res.eval / 100.0f;
+		if (side_to_move == BLACK) cp = -cp;
+
 		if (res.halt) {
-		// send info
-			if (res.sa == -1 || res.ta == -1)
+			// send info
+			if (res.sa == -1 || res.ta == -1) {
 				res = prev_res;
-			float cp = (float)res.eval / 100.0f;
-			if (side_to_move == BLACK) cp = -cp;
-			snprintf(info_buff, 64, "info depth %d cp %.2f time %lld\n", 
-					--depth, cp, platform_get_time_ms() - start_time);
+				cp = (float)res.eval / 100.0f;
+				if (side_to_move == BLACK) cp = -cp;
+			}
+
+			snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld\n", 
+					--depth, cp, time_elapsed, nodes_searched, nps);
 			platform_send_uci_command(info_buff);
 			return res;
 		}
@@ -261,10 +274,8 @@ Search_Result iterative_ab_search(ULL search_time) {
 		prev_res = res;
 
 		// send info
-		float cp = (float)res.eval / 100.0f;
-		if (side_to_move == BLACK) cp = -cp;
-		snprintf(info_buff, 64, "info depth %d cp %.2f time %lld\n", 
-				depth, cp, platform_get_time_ms() - start_time);
+		snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld\n", 
+				depth, cp, time_elapsed, nodes_searched, nps);
 		platform_send_uci_command(info_buff);
 		// checkmate
 		if (res.eval >= INF || res.eval <= N_INF) return res;
