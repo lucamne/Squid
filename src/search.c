@@ -221,14 +221,13 @@ Search_Result iterative_ab_search(ULL search_time) {
 	const ULL start_time = platform_get_time_ms();
 	ULL ms_cutoff = search_time + start_time;
 
-	const int asp_window = 50;
-	int alpha = N_INF - depth - 1 - asp_window;
-	int beta = INF + depth + 1 + asp_window;
-
 	char is_timed = 1;
 	if (search_time == 0) is_timed = 0;
 	int depth = 1;
 	Search_Result prev_res = {0, 1, -1, -1, EMPTY};
+	const int asp_window = 50;
+	int alpha = N_INF - depth - 1 - asp_window;
+	int beta = INF + depth + 1 + asp_window;
 
 	char info_buff[INFO_BUFF_SIZE];	
 	while(1) {
