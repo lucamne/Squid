@@ -228,7 +228,7 @@ Search_Result iterative_ab_search(ULL search_time) {
 	char is_timed = 1;
 	if (search_time == 0) is_timed = 0;
 	int depth = 1;
-	Search_Result prev_res = {0, 1, -1, -1, EMPTY, NULL};
+	Search_Result prev_res = {0, 1, -1, -1, EMPTY};
 
 	char info_buff[INFO_BUFF_SIZE];	
 	while(1) {
