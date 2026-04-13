@@ -4,56 +4,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-// Converts promo PIECE to ascii char
-static char promo_to_char(PIECE p) {
-	switch(p) {
-		case BR:
-		case WR:
-			return 'r';
-		case BN:
-		case WN:
-			return 'n';
-		case BB:
-		case WB:
-			return 'b';
-		case BQ:
-		case WQ:
-			return 'q';
-		default:
-			return ' ';
-	}
-}
-
-// Convert mailbox address to chess square notation and store in buffer
-// Assume buffer is allocated and is at least two characters long
-// Do not assume buffer is null terminated
-// Assume addr is within range [0-63]
-static void addr_to_str(int addr, char* buffer) {
-	ASSERT(on_board(addr));
-	ASSERT(buffer);
-
-	char rank = (char)addr_to_rank(addr);
-	char file = (char)addr_to_file(addr) - 1;
-	file += 'a';
-
-	buffer[0] = file;
-	buffer[1] = rank + '0';
-}
-
 
 // Search in a seperate thread 
 // Input search time in ms or 0 for infinite search
 // If searching infinitely wait for halt command
 static void run_search(void* ms) {
-	Search_Result res = iterative_ab_search(*(ULL*)ms);
+	MMove bestmove = iterative_ab_search(*(ULL*)ms);
 	free(ms);
 
 	// send bestmove
 	char info_buff[16];
 	cpy_chars(info_buff, "bestmove ", 9);
-	addr_to_str(res.sa, info_buff + 9);
-	addr_to_str(res.ta, info_buff + 11);
-	info_buff[13] = promo_to_char(res.promo);
+	move_to_str(bestmove, info_buff + 9);
 	if (info_buff[13] == ' ') {
 		info_buff[13] = '\n';
 		info_buff[14] = '\0';

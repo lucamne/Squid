@@ -2,6 +2,7 @@
 #include "core.h"
 
 #include <stdio.h>
+#include <string.h>
 
 #include "eval.c"
 
@@ -13,6 +14,13 @@
 #define N_INF -999999
 #define INF 999999
 #define INFO_BUFF_SIZE 256	// size of buffer for info output commands
+#define MAX_VARIATION_LEN 16	// max variation length (depth)
+
+// Contains variation line
+typedef struct {
+	int count;
+	MMove line[MAX_VARIATION_LEN];
+} Variation;
 
 // search parameters
 typedef struct {
@@ -22,14 +30,14 @@ typedef struct {
 	char is_timed;	// is search timed
 	ULL ms_cutoff;	// if search is timed at what time to timeout
 			// (compared to result of platform_get_time_ms())
-
-	// characteristics to describe a priority move if any
-	// addresses should be set to -1 if no priority move
-	// priority move will be searched first
-	int prio_sa;
-	int prio_ta;
-	PIECE prio_promo;
+	Variation* pv;	// principle variation
 } AB_Params;
+
+// Result of search call
+typedef struct {
+	int eval;	// eval from side to move's perspective
+	char halt;	// did search halt (either timeout or stop request)
+} Search_Result;
 
 // return table entry of current position
 static TT_Entry tt_search(void) {
@@ -37,16 +45,13 @@ static TT_Entry tt_search(void) {
 }
 
 // add current position to transposition table
-static void tt_add(NODE_TYPE nt, int depth, int eval, int sa, int ta, PIECE promo) {
+static void tt_add(NODE_TYPE nt, int depth, int eval) {
 	ULL i = game_hash & TTMOD;
 	ttable[i].active = 1;
 	ttable[i].hash = game_hash;
 	ttable[i].depth = (char)depth;
 	ttable[i].nt = nt;
 	ttable[i].eval = eval;
-	ttable[i].sa = (char)sa;
-	ttable[i].ta = (char)ta;
-	ttable[i].promo = promo;
 }
 
 static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
@@ -94,46 +99,37 @@ Search_Result ab_search(AB_Params params) {
 	int depth = params.depth;
 	char is_timed = params.is_timed;
 	ULL ms_cutoff = params.ms_cutoff;
-	int prio_sa = params.prio_sa;
-	int prio_ta = params.prio_ta;
-	PIECE prio_promo = params.prio_promo;
+	Variation* pv = params.pv;
 
 	ASSERT(is_timed == 0 || ms_cutoff > 0);
-	Search_Result res = {0, 0, -1, -1, EMPTY};
+	Search_Result res = {0, 0};
 
 	if (is_repeat_position()) {
 		res.eval = 0;
+		pv->count = 0;
 		return res;
 	}
 	if (depth == 0) {
 		res.eval = quiesce(alpha, beta, is_timed, ms_cutoff);
+		pv->count = 0;
 		return res;
 	}
 	if ((is_timed && platform_get_time_ms() > ms_cutoff) || uci_halt_requested) {
 		res.halt = 1;
+		pv->count = 0;
 		return res;
 	}
 
 	// check transposition table
 	TT_Entry te = tt_search();
 	if (te.active && te.hash == game_hash && te.depth >= depth) {
-		if (te.nt == PV) {
+		if (te.nt == LB && te.eval >= beta) {
 			res.eval = te.eval;
-			res.sa = te.sa;
-			res.ta = te.ta;
-			res.promo = te.promo;
-			return res;
-		} else if (te.nt == LB && te.eval >= beta) {
-			res.eval = te.eval;
-			res.sa = te.sa;
-			res.ta = te.ta;
-			res.promo = te.promo;
+			pv->count = 0;
 			return res;
 		} else if (te.nt == UB && te.eval < alpha) {
 			res.eval = te.eval;
-			res.sa = te.sa;
-			res.ta = te.ta;
-			res.promo = te.promo;
+			pv->count = 0;
 			return res;
 		}
 	}
@@ -141,15 +137,18 @@ Search_Result ab_search(AB_Params params) {
 	NODE_TYPE nt = PV;
 	int best_score = N_INF - depth;
 	Move ml[256];
+	Variation curr_var;
 	int n_moves = gen_moves(ml);
 
+	/*
+	 * TODO replace
 	// setup priority move
 	if (prio_sa != -1) {
 		ASSERT(on_board(prio_sa) && on_board(prio_ta));
 		ASSERT(prio_promo >= EMPTY && prio_promo <= BK);
 
 		if (init_move(ml + n_moves, prio_sa, prio_ta)) {
-			ml[n_moves].promo = prio_promo;
+			ml[n_moves].mv.promo = prio_promo;
 		}
 
 		Move t = ml[0];
@@ -157,13 +156,17 @@ Search_Result ab_search(AB_Params params) {
 		ml[n_moves] = t;
 		n_moves++;
 	}
+	*/
 
 	// maximize eval
 	for (int i = 0; i < n_moves; i++) {
+		/*
+		 * TODO replace
 		// skip second instance of prio move
-		if (		i > 0 && prio_sa == ml[i].sa && 
-				prio_ta == ml[i].ta && prio_promo == ml[i].promo)
+		if (		i > 0 && prio_sa == ml[i].mv.sa && 
+				prio_ta == ml[i].mv.ta && prio_promo == ml[i].mv.promo)
 			continue;
+			*/
 
 		make_move(ml + i);
 		AB_Params p = {
@@ -171,10 +174,8 @@ Search_Result ab_search(AB_Params params) {
 			-beta, 
 			-alpha, 
 			is_timed, 
-			ms_cutoff, 
-			-1, 
-			-1, 
-			EMPTY};
+			ms_cutoff,
+			&curr_var};
 		Search_Result temp_res = ab_search(p);
 		unmake_move(ml + i);
 
@@ -186,9 +187,10 @@ Search_Result ab_search(AB_Params params) {
 		int score = -temp_res.eval;
 		if (score > best_score) {
 			best_score = score;
-			res.sa = ml[i].sa;
-			res.ta = ml[i].ta;
-			res.promo = ml[i].promo;
+			pv->line[0] = (MMove){ml[i].mv.sa, ml[i].mv.ta, ml[i].mv.promo};
+			memcpy(pv->line + 1, curr_var.line, curr_var.count * sizeof(MMove));
+			pv->count = curr_var.count + 1;
+
 			if (score > alpha)
 				alpha = score;
 		}
@@ -211,12 +213,12 @@ Search_Result ab_search(AB_Params params) {
 		}
 	}
 	res.eval = best_score;
-	tt_add(nt, depth, best_score, res.sa, res.ta, res.promo);
+	tt_add(nt, depth, best_score);
 
 	return res;
 }
 
-Search_Result iterative_ab_search(ULL search_time) {
+MMove iterative_ab_search(ULL search_time) {
 	nodes_searched = 0;
 	const ULL start_time = platform_get_time_ms();
 	ULL ms_cutoff = search_time + start_time;
@@ -224,22 +226,25 @@ Search_Result iterative_ab_search(ULL search_time) {
 	char is_timed = 1;
 	if (search_time == 0) is_timed = 0;
 	int depth = 1;
-	Search_Result prev_res = {0, 1, -1, -1, EMPTY};
 	const int asp_window = 50;
 	int alpha = N_INF - depth - 1 - asp_window;
 	int beta = INF + depth + 1 + asp_window;
 
+	Search_Result prev_res = {0, 1};
+	Variation prev_pv;
+	prev_pv.count = 1;
+	prev_pv.line[0] = (MMove){-1, -1, EMPTY};
+
 	char info_buff[INFO_BUFF_SIZE];	
 	while(1) {
+		Variation curr_pv;
 		AB_Params p = {
 			depth, 
 			alpha,
 			beta,
 			is_timed, 
-			ms_cutoff, 
-			prev_res.sa, 
-			prev_res.ta, 
-			prev_res.promo};
+			ms_cutoff,
+			&curr_pv};
 		Search_Result res = ab_search(p);
 		// statistics
 		ULL time_elapsed = platform_get_time_ms() - start_time;
@@ -250,8 +255,9 @@ Search_Result iterative_ab_search(ULL search_time) {
 
 		if (res.halt) {
 			// send info
-			if (res.sa == -1 || res.ta == -1) {
+			if (curr_pv.line[0].sa == -1 || curr_pv.line[0].ta == -1) {
 				res = prev_res;
+				curr_pv = prev_pv;
 				cp = (float)res.eval / 100.0f;
 				if (side_to_move == BLACK) cp = -cp;
 			}
@@ -259,7 +265,7 @@ Search_Result iterative_ab_search(ULL search_time) {
 			snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld\n", 
 					--depth, cp, time_elapsed, nodes_searched, nps);
 			platform_send_uci_command(info_buff);
-			return res;
+			return curr_pv.line[0];
 		}
 
 		if (res.eval <= alpha) {
@@ -271,13 +277,26 @@ Search_Result iterative_ab_search(ULL search_time) {
 			continue;
 		}
 		prev_res = res;
+		prev_pv = curr_pv;
 
 		// send info
-		snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld\n", 
+		snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld pv ", 
 				depth, cp, time_elapsed, nodes_searched, nps);
+		int info_pos = strlen(info_buff);
+		for (int pv_move = 0; pv_move < curr_pv.count; pv_move++) {
+			move_to_str(curr_pv.line[pv_move], info_buff + info_pos);
+			if (info_buff[info_pos + 4] == ' ')
+				info_pos += 5;
+			else
+				info_pos += 6;
+		}
+		info_buff[info_pos - 1] = '\n';
+		info_buff[info_pos] = '\0';
+
 		platform_send_uci_command(info_buff);
 		// checkmate
-		if (res.eval >= INF || res.eval <= N_INF) return res;
+		if (res.eval >= INF || res.eval <= N_INF) 
+			return curr_pv.line[0];
 
 		alpha = res.eval - asp_window;
 		beta = res.eval + asp_window;

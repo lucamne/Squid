@@ -25,10 +25,10 @@ if "%RELEASE%"=="1" (
 
 REM ensure correct directory and compile
 REM ******Uncomment this for work pc****** 
-REM cd C:\Users\lnegris\projects\chess_engine_03
+REM cd C:\Users\lnegris\source\repos\squid
 
 REM ******This is for Luca's XPS laptop
-cd C:\Users\negri\source\repos\squid
+REM cd C:\Users\negri\source\repos\squid
 
 cl %CFLAGS% %SOURCES% /Fe:"%OUTPUT%" /link /INCREMENTAL:NO
 if errorlevel 1 (

@@ -59,9 +59,6 @@ typedef struct {
 	char depth;	// depth of node
 	NODE_TYPE nt;
 	int eval;	// node eval 
-	char sa;	// starting address and target address of best move
-	char ta;
-	PIECE promo;	// promotion piece if any
 } TT_Entry;
 
 // direction of movement for a sliding piece
@@ -77,36 +74,20 @@ typedef enum {
 	DL = 9
 } DIRECTION;
 
-/*
-// Linked list node in a search variation
-typdef struct {
-	int sa;
-	int ta;
-	PIECE promo;
-	Var_Move* next;
-} Var_Move; */
-
-// Result of search call
-typedef struct {
-	int eval;	// eval from side to move's perspective
-	char halt;	// did search halt (either timeout or stop request)
-	int sa;		// starting address and target address of best move
-	int ta;
-	PIECE promo;	// promotion piece if any
-	// Var_Move* var;	// variation linked list
-} Search_Result;
-
-// Info needed by the engine to execute a move
+// Minimal info needed to describe a chess move
 typedef struct {
 	int sa;			// source address
 	int ta;			// target address
+	PIECE promo;		// promotion piece
+} MMove;
 
+// Info needed by the engine to execute a move
+typedef struct {
+	MMove mv;
 	unsigned char castle_rights;
 	ULL game_hash;
-
 	int ep_addr;
 	int cap_id;		// captured piece id
-	PIECE promo;		// promotion piece
 	int halfmoves;
 } Move;
 
@@ -263,7 +244,7 @@ void init(void);
 
 /* search.c */
 
-Search_Result iterative_ab_search(ULL search_time);
+MMove iterative_ab_search(ULL search_time);
 // Search for best move in current position
 // Input search time in ms or 0 to search until halt signal
 
@@ -386,6 +367,53 @@ static int str_to_addr(const char* buffer) {
 	addr *= 10;
 	addr += file - 'a' + 1;
 	return addr;
+}
+
+// Converts promo PIECE to ascii char
+static char promo_to_char(PIECE p) {
+	switch(p) {
+		case BR:
+		case WR:
+			return 'r';
+		case BN:
+		case WN:
+			return 'n';
+		case BB:
+		case WB:
+			return 'b';
+		case BQ:
+		case WQ:
+			return 'q';
+		default:
+			return ' ';
+	}
+}
+
+// Convert mailbox address to chess square notation and store in buffer
+// Assume buffer is allocated and is at least two characters long
+// Do not assume buffer is null terminated
+// Assume addr is within range [0-63]
+static void addr_to_str(int addr, char* buffer) {
+	ASSERT(on_board(addr));
+	ASSERT(buffer);
+
+	char rank = (char)addr_to_rank(addr);
+	char file = (char)addr_to_file(addr) - 1;
+	file += 'a';
+
+	buffer[0] = file;
+	buffer[1] = rank + '0';
+}
+
+// Convert move to algebraic notation and store in buffer
+// Assume buffer is allocated and is at least two characters long
+// Do not assume buffer is null terminated
+// Assume addr is within range [0-63]
+static void move_to_str(MMove mv, char* buffer) {
+	ASSERT(buffer);
+	addr_to_str(mv.sa, buffer);
+	addr_to_str(mv.ta, buffer + 2);
+	buffer[4] = promo_to_char(mv.promo);
 }
 
 #endif
