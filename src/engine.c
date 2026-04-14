@@ -200,7 +200,7 @@ void engine_send_uci_command(const char* cmd) {
 		if (!uci_cmd_received) {
 			if (next_token_eq(cmd, "uci")) {
 				uci_cmd_received = 1;
-				platform_send_uci_command("id name squid-alpha\nid author Luca Negris\n");
+				platform_send_uci_command("id name squid-a1\nid author Luca Negris\n");
 				platform_send_uci_command("uciok\n");
 				return;
 			}

@@ -141,34 +141,41 @@ Search_Result ab_search(AB_Params params) {
 	int n_moves = gen_moves(ml);
 
 	// setup priority move
-	int prio_sa = -1;
-	int prio_ta = -1;
-	PIECE prio_promo = EMPTY;
-	if (prio->count > 0 ) {
-		prio_sa = prio->line[0].sa;
-		prio_ta = prio->line[0].ta;
-		prio_promo = prio->line[0].promo;
-		memmove(prio->line, prio->line + 1, --(prio->count) * sizeof(MMove));
-
-		if (prio_sa != -1 && prio_ta != -1) {
-			if (init_move(ml + n_moves, prio_sa, prio_ta)) {
-				ml[n_moves].mv.promo = prio_promo;
+	if (prio->count > 0 && n_moves > 0) {
+		int prio_pos = -1;
+		int non_cap_pos = -1;
+		Move t = ml[0];
+		for (int i = 0; i < n_moves; i++) {
+			if (ml[i].cap_id == E_ID) {
+				non_cap_pos = i;
 			}
 
-			Move t = ml[0];
-			ml[0] = ml[n_moves];
-			ml[n_moves] = t;
-			n_moves++;
+			if (		ml[i].mv.sa == prio->line[0].sa && 
+					ml[i].mv.ta == prio->line[0].ta &&
+					ml[i].mv.promo == prio->line[0].promo) {
+				prio_pos = i;
+				break;
+			}
+		}
+
+		if (prio_pos == -1) {
+			prio->count = 0;
+		} else {
+			ml[0] = ml[prio_pos];
+			if (non_cap_pos <= 0) {
+				ml[prio_pos] = t;
+			} else {
+				Move t2 = ml[non_cap_pos];
+				ml[non_cap_pos] = t;
+				ml[prio_pos] = t2;
+			}
+			prio->count--;
+			memmove(prio->line, prio->line + 1, prio->count* sizeof(MMove));
 		}
 	}
 
 	// maximize eval
 	for (int i = 0; i < n_moves; i++) {
-		// skip second instance of prio move
-		if (		i > 0 && prio_sa == ml[i].mv.sa && 
-				prio_ta == ml[i].mv.ta && prio_promo == ml[i].mv.promo)
-			continue;
-
 		make_move(ml + i);
 		AB_Params p = {
 			depth - 1, 
@@ -237,10 +244,12 @@ static void send_pv(int depth, float cp, ULL time_elapsed, ULL nodes, ULL nps, V
 	int pos = strlen(info_buff);
 	for (int i = 0; i < pv->count; i++) {
 		mmove_to_str(pv->line[i], info_buff + pos);
-		if (info_buff[pos + 4] == ' ')
+		if (info_buff[pos + 4] == ' ') {
 			pos += 5;
-		else
+		} else {
+			info_buff[pos + 5] = ' ';
 			pos += 6;
+		}
 	}
 	info_buff[pos - 1] = '\n';
 	info_buff[pos] = '\0';

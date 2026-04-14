@@ -150,7 +150,7 @@ ULL game_hash;
 
 // history of position hashes used for repetition checking
 // index 1 is populated when position is loaded
-ULL history[256];
+ULL history[512];
 int history_cnt;
 
 // modify transposition table size to control memory usage
