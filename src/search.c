@@ -13,7 +13,9 @@
 // can be any value as long as sufficiently large
 #define N_INF -999999
 #define INF 999999
-#define MAX_VARIATION_LEN 16	// max variation length (depth)
+// program behavior is undefined if these are too small
+#define MAX_VARIATION_LEN 256	// max variation length (depth)
+#define INFO_BUFF_SIZE 256	// max size of info string output
 
 // Contains variation line
 typedef struct {
@@ -39,6 +41,9 @@ typedef struct {
 	char halt;	// did search halt (either timeout or stop request)
 } Search_Result;
 
+////////////////////////////////////////////////////////////////////////////////
+/// FUNCTIONS
+
 // return table entry of current position
 static TT_Entry tt_search(void) {
 	return ttable[game_hash & TTMOD];
@@ -51,6 +56,7 @@ static void tt_add(NODE_TYPE nt, int depth, int eval) {
 }
 
 
+// "quiet search"
 static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	int static_eval = evaluate();
 	nodes_searched++;
@@ -141,6 +147,7 @@ Search_Result ab_search(AB_Params params) {
 	int n_moves = gen_moves(ml);
 
 	// setup priority move
+	// maintain captures at front of move list
 	if (prio->count > 0 && n_moves > 0) {
 		int prio_pos = -1;
 		int non_cap_pos = -1;
@@ -231,7 +238,6 @@ Search_Result ab_search(AB_Params params) {
 }
 
 // send search info
-#define INFO_BUFF_SIZE 256
 static void send_pv(int depth, float cp, ULL time_elapsed, ULL nodes, ULL nps, Variation* pv) {
 	ASSERT(pv);
 	char info_buff[INFO_BUFF_SIZE];	
