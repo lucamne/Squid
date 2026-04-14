@@ -11,29 +11,17 @@ static int wp_mobility(void) {
 
 		// advance
 		if (pt_at_addr(a - 10) == EMPTY) {
-			if (addr_to_rank(a) == 7) {
-				n_moves += 4;
-			} else {
+			n_moves++;
+			if (addr_to_rank(a) == 2 && pt_at_addr(a - 20) == EMPTY) {
 				n_moves++;
-				if (addr_to_rank(a) == 2 && pt_at_addr(a - 20) == EMPTY) {
-					n_moves++;
-				}
 			}
 		}
 		// captures
 		if (piece_color[board[a - 9]] == BLACK || ep_addr == a - 9) {
-			if (addr_to_rank(a) == 7) {
-				n_moves += 4;
-			} else {
-				n_moves++;
-			}
+			n_moves++;
 		}
 		if (piece_color[board[a - 11]] == BLACK || ep_addr == a - 11) {
-			if (addr_to_rank(a) == 7) {
-				n_moves += 4;
-			} else {
-				n_moves++;
-			}
+			n_moves++;
 		}
 	}
 	return n_moves;
@@ -52,29 +40,17 @@ static int bp_mobility(void) {
 
 		// advance
 		if (pt_at_addr(a + 10) == EMPTY) {
-			if (addr_to_rank(a) == 2) {
-				n_moves += 4;
-			} else {
+			n_moves++;
+			if (addr_to_rank(a) == 7 && pt_at_addr(a + 20) == EMPTY) {
 				n_moves++;
-				if (addr_to_rank(a) == 7 && pt_at_addr(a + 20) == EMPTY) {
-					n_moves++;
-				}
 			}
 		}
 		// captures
 		if (piece_color[board[a + 9]] == WHITE || ep_addr == a + 9) {
-			if (addr_to_rank(a) == 2) {
-				n_moves += 4;
-			} else {
-				n_moves++;
-			}
+			n_moves++;
 		}
 		if (piece_color[board[a + 11]] == WHITE || ep_addr == a + 11) {
-			if (addr_to_rank(a) == 2) {
-				n_moves += 4;
-			} else {
-				n_moves++;
-			}
+			n_moves++;
 		}
 	}
 	return n_moves;
@@ -154,9 +130,7 @@ static int king_mobility(COLOR c) {
 	if (c == WHITE) {
 		if (		castle_rights & K_CASTLE && 
 				pt_at_addr(a + 1) == EMPTY && 
-				pt_at_addr(a + 2) == EMPTY && 
-				!is_square_attacked(a, BLACK) && 
-				!is_square_attacked(a + 1, BLACK)) {
+				pt_at_addr(a + 2) == EMPTY) {
 			ASSERT(pt_at_addr(98) == WR);
 			ASSERT(pt_at_addr(95) == WK);
 			n_moves++;
@@ -164,9 +138,7 @@ static int king_mobility(COLOR c) {
 		if (		castle_rights & Q_CASTLE && 
 				pt_at_addr(a - 1) == EMPTY && 
 				pt_at_addr(a - 2) == EMPTY && 
-				pt_at_addr(a - 3) == EMPTY &&
-				!is_square_attacked(a, BLACK) && 
-				!is_square_attacked(a - 1, BLACK)) {
+				pt_at_addr(a - 3) == EMPTY) {
 			ASSERT(pt_at_addr(91) == WR);
 			ASSERT(pt_at_addr(95) == WK);
 			n_moves++;
@@ -174,9 +146,7 @@ static int king_mobility(COLOR c) {
 	} else {
 		if (		castle_rights & k_CASTLE && 
 				pt_at_addr(a + 1) == EMPTY && 
-				pt_at_addr(a + 2) == EMPTY && 
-				!is_square_attacked(a, WHITE) && 
-				!is_square_attacked(a + 1, WHITE)) {
+				pt_at_addr(a + 2) == EMPTY) {
 			ASSERT(pt_at_addr(28) == BR);
 			ASSERT(pt_at_addr(25) == BK);
 			n_moves++;
@@ -184,9 +154,7 @@ static int king_mobility(COLOR c) {
 		if (		castle_rights & q_CASTLE && 
 				pt_at_addr(a - 1) == EMPTY && 
 				pt_at_addr(a - 2) == EMPTY && 
-				pt_at_addr(a - 3) == EMPTY &&
-				!is_square_attacked(a, WHITE) && 
-				!is_square_attacked(a - 1, WHITE)) {
+				pt_at_addr(a - 3) == EMPTY) {
 			ASSERT(pt_at_addr(21) == BR);
 			ASSERT(pt_at_addr(25) == BK);
 			n_moves++;
@@ -365,14 +333,10 @@ static int pawn_structure_eval(COLOR c) {
 		file_count[addr_to_file(a) - 1]++;
 
 		switch (rank) {
-			case 4:
-				score += 1;
-			case 5:
-				score += 2;
 			case 6:
-				score += 4;
+				score += 5;
 			case 7:
-				score += 6;
+				score += 10;
 			default:;
 		}
 	}
@@ -407,7 +371,7 @@ int evaluate(void) {
 	const int B = 300;
 	const int N = 300;
 	const int P = 100;
-	const int MOB = 5;
+	const int MOB = 10;
 
 	if (halfmoves == 50) return 0;
 	int score = K * (material_counts[WK - 2] - material_counts[BK - 2]) +
