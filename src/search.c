@@ -13,7 +13,6 @@
 // can be any value as long as sufficiently large
 #define N_INF -999999
 #define INF 999999
-#define INFO_BUFF_SIZE 256	// size of buffer for info output commands
 #define MAX_VARIATION_LEN 16	// max variation length (depth)
 
 // Contains variation line
@@ -29,8 +28,9 @@ typedef struct {
 	int beta;
 	char is_timed;	// is search timed
 	ULL ms_cutoff;	// if search is timed at what time to timeout
-			// (compared to result of platform_get_time_ms())
-	Variation* pv;	// principle variation
+	Variation* pv;	// output principle variation
+	Variation* prio;// priority variation, check these moves first
+	char is_top;	// is top level of search
 } AB_Params;
 
 // Result of search call
@@ -47,12 +47,9 @@ static TT_Entry tt_search(void) {
 // add current position to transposition table
 static void tt_add(NODE_TYPE nt, int depth, int eval) {
 	ULL i = game_hash & TTMOD;
-	ttable[i].active = 1;
-	ttable[i].hash = game_hash;
-	ttable[i].depth = (char)depth;
-	ttable[i].nt = nt;
-	ttable[i].eval = eval;
+	ttable[i] = (TT_Entry){1, game_hash, (char)depth, nt, eval};
 }
+
 
 static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	int static_eval = evaluate();
@@ -82,6 +79,8 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 
 		if (score >= beta)
 			return score;
+		if ((is_timed && platform_get_time_ms() > ms_cutoff) || uci_halt_requested)
+			return best_value;
 		if (score > best_value)
 			best_value = score;
 		if (score > alpha)
@@ -100,6 +99,7 @@ Search_Result ab_search(AB_Params params) {
 	char is_timed = params.is_timed;
 	ULL ms_cutoff = params.ms_cutoff;
 	Variation* pv = params.pv;
+	Variation* prio = params.prio;
 
 	ASSERT(is_timed == 0 || ms_cutoff > 0);
 	Search_Result res = {0, 0};
@@ -140,33 +140,34 @@ Search_Result ab_search(AB_Params params) {
 	Variation curr_var;
 	int n_moves = gen_moves(ml);
 
-	/*
-	 * TODO replace
 	// setup priority move
-	if (prio_sa != -1) {
-		ASSERT(on_board(prio_sa) && on_board(prio_ta));
-		ASSERT(prio_promo >= EMPTY && prio_promo <= BK);
+	int prio_sa = -1;
+	int prio_ta = -1;
+	PIECE prio_promo = EMPTY;
+	if (prio->count > 0 ) {
+		prio_sa = prio->line[0].sa;
+		prio_ta = prio->line[0].ta;
+		prio_promo = prio->line[0].promo;
+		memmove(prio->line, prio->line + 1, --(prio->count) * sizeof(MMove));
 
-		if (init_move(ml + n_moves, prio_sa, prio_ta)) {
-			ml[n_moves].mv.promo = prio_promo;
+		if (prio_sa != -1 && prio_ta != -1) {
+			if (init_move(ml + n_moves, prio_sa, prio_ta)) {
+				ml[n_moves].mv.promo = prio_promo;
+			}
+
+			Move t = ml[0];
+			ml[0] = ml[n_moves];
+			ml[n_moves] = t;
+			n_moves++;
 		}
-
-		Move t = ml[0];
-		ml[0] = ml[n_moves];
-		ml[n_moves] = t;
-		n_moves++;
 	}
-	*/
 
 	// maximize eval
 	for (int i = 0; i < n_moves; i++) {
-		/*
-		 * TODO replace
 		// skip second instance of prio move
 		if (		i > 0 && prio_sa == ml[i].mv.sa && 
 				prio_ta == ml[i].mv.ta && prio_promo == ml[i].mv.promo)
 			continue;
-			*/
 
 		make_move(ml + i);
 		AB_Params p = {
@@ -175,12 +176,16 @@ Search_Result ab_search(AB_Params params) {
 			-alpha, 
 			is_timed, 
 			ms_cutoff,
-			&curr_var};
+			&curr_var,
+			prio,
+			0};
 		Search_Result temp_res = ab_search(p);
 		unmake_move(ml + i);
 
 		if (temp_res.halt) {
 			res.halt = 1;
+			if (params.is_top)
+				res.eval = best_score;
 			return res;
 		}
 
@@ -218,8 +223,34 @@ Search_Result ab_search(AB_Params params) {
 	return res;
 }
 
+// send search info
+#define INFO_BUFF_SIZE 256
+static void send_pv(int depth, float cp, ULL time_elapsed, ULL nodes, ULL nps, Variation* pv) {
+	ASSERT(pv);
+	char info_buff[INFO_BUFF_SIZE];	
+
+	// format info string
+	snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld pv ",
+			depth, cp, time_elapsed, nodes, nps);
+
+	// extract principle variation
+	int pos = strlen(info_buff);
+	for (int i = 0; i < pv->count; i++) {
+		mmove_to_str(pv->line[i], info_buff + pos);
+		if (info_buff[pos + 4] == ' ')
+			pos += 5;
+		else
+			pos += 6;
+	}
+	info_buff[pos - 1] = '\n';
+	info_buff[pos] = '\0';
+
+	platform_send_uci_command(info_buff);
+}
+
 MMove iterative_ab_search(ULL search_time) {
 	nodes_searched = 0;
+
 	const ULL start_time = platform_get_time_ms();
 	ULL ms_cutoff = search_time + start_time;
 
@@ -232,20 +263,27 @@ MMove iterative_ab_search(ULL search_time) {
 
 	Search_Result prev_res = {0, 1};
 	Variation prev_pv;
-	prev_pv.count = 1;
+	prev_pv.count = 0;
 	prev_pv.line[0] = (MMove){-1, -1, EMPTY};
 
-	char info_buff[INFO_BUFF_SIZE];	
 	while(1) {
 		Variation curr_pv;
+		curr_pv.count = 0;
+		Variation prio_pv;
+		memcpy(prio_pv.line, prev_pv.line, prev_pv.count * sizeof(MMove));
+		prio_pv.count = prev_pv.count;
+
 		AB_Params p = {
 			depth, 
 			alpha,
 			beta,
 			is_timed, 
 			ms_cutoff,
-			&curr_pv};
+			&curr_pv,
+			&prio_pv,
+			1};
 		Search_Result res = ab_search(p);
+
 		// statistics
 		ULL time_elapsed = platform_get_time_ms() - start_time;
 		if (!time_elapsed) time_elapsed = 1;
@@ -254,17 +292,15 @@ MMove iterative_ab_search(ULL search_time) {
 		if (side_to_move == BLACK) cp = -cp;
 
 		if (res.halt) {
-			// send info
-			if (curr_pv.line[0].sa == -1 || curr_pv.line[0].ta == -1) {
+			if (curr_pv.count < depth) {
 				res = prev_res;
-				curr_pv = prev_pv;
+				memcpy(curr_pv.line, prev_pv.line, prev_pv.count * sizeof(MMove));
+				curr_pv.count = prev_pv.count;
 				cp = (float)res.eval / 100.0f;
 				if (side_to_move == BLACK) cp = -cp;
 			}
 
-			snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld\n", 
-					--depth, cp, time_elapsed, nodes_searched, nps);
-			platform_send_uci_command(info_buff);
+			send_pv(depth, cp, time_elapsed, nodes_searched, nps, &curr_pv);
 			return curr_pv.line[0];
 		}
 
@@ -276,24 +312,14 @@ MMove iterative_ab_search(ULL search_time) {
 			beta += asp_window;
 			continue;
 		}
+
 		prev_res = res;
-		prev_pv = curr_pv;
+		memcpy(prev_pv.line, curr_pv.line, curr_pv.count * sizeof(MMove));
+		prev_pv.count = curr_pv.count;
 
 		// send info
-		snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld pv ", 
-				depth, cp, time_elapsed, nodes_searched, nps);
-		int info_pos = strlen(info_buff);
-		for (int pv_move = 0; pv_move < curr_pv.count; pv_move++) {
-			move_to_str(curr_pv.line[pv_move], info_buff + info_pos);
-			if (info_buff[info_pos + 4] == ' ')
-				info_pos += 5;
-			else
-				info_pos += 6;
-		}
-		info_buff[info_pos - 1] = '\n';
-		info_buff[info_pos] = '\0';
+		send_pv(depth, cp, time_elapsed, nodes_searched, nps, &curr_pv);
 
-		platform_send_uci_command(info_buff);
 		// checkmate
 		if (res.eval >= INF || res.eval <= N_INF) 
 			return curr_pv.line[0];

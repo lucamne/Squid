@@ -28,7 +28,7 @@ REM ******Uncomment this for work pc******
 REM cd C:\Users\lnegris\source\repos\squid
 
 REM ******This is for Luca's XPS laptop
-REM cd C:\Users\negri\source\repos\squid
+cd C:\Users\negri\source\repos\squid
 
 cl %CFLAGS% %SOURCES% /Fe:"%OUTPUT%" /link /INCREMENTAL:NO
 if errorlevel 1 (

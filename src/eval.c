@@ -341,8 +341,64 @@ static int is_repeat_position(void) {
 	return 0;
 }
 
+// Return an avaluation of the pawn structure in centipawns
+// Evaluation is from color 'c's perspective
+static int pawn_structure_eval(COLOR c) {
+	ASSERT(c == WHITE || c == BLACK);
+	int *pid_arr;
+	int np;
+	if (c == WHITE) {
+		pid_arr = piece_ids[WP - 2];
+		np = p_count(WP);
+	} else {
+		pid_arr = piece_ids[BP - 2];
+		np = p_count(BP);
+	}
+
+	char file_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	int score = 0;
+	for (int i = 0; i < np; i++) {
+		int id = pid_arr[i];
+		int a = piece_addr[id];
+		int rank = addr_to_rank(a);
+		if (c == BLACK) rank -= 9;
+		file_count[addr_to_file(a) - 1]++;
+
+		switch (rank) {
+			case 4:
+				score += 1;
+			case 5:
+				score += 2;
+			case 6:
+				score += 4;
+			case 7:
+				score += 6;
+			default:;
+		}
+	}
+
+	const int doubled = 5;
+	const int isolated = 5;
+	for (int i = 0; i < 8; i++) {
+		int cnt = file_count[i];
+		if (cnt) {
+			score -= (cnt - 1) * doubled;
+
+			if (i == 0 && !file_count[1])
+				score -= cnt * isolated;
+			else if (i == 7 && !file_count[6])
+				score -= cnt * isolated;
+			else if (!file_count[i - 1] && !file_count[i + 1])
+				score -= cnt * isolated;
+		}
+	}
+	return score;
+}
+
 // Evaluate position from side_to_move's perspective
 // in centipawns
+// TODO there is redundant processing here
+// 	I have left it for simplicity but optimize when needed
 int evaluate(void) {
 	// material values
 	const int K = 20000;
@@ -362,6 +418,9 @@ int evaluate(void) {
 		P * (material_counts[WP - 2] - material_counts[BP - 2]);
 
 	score += MOB * mobility();
+
+	score += pawn_structure_eval(WHITE);
+	score -= pawn_structure_eval(BLACK);
 
 	if (side_to_move == BLACK) score *= -1;
 	return score;

@@ -409,7 +409,7 @@ static void addr_to_str(int addr, char* buffer) {
 // Assume buffer is allocated and is at least two characters long
 // Do not assume buffer is null terminated
 // Assume addr is within range [0-63]
-static void move_to_str(MMove mv, char* buffer) {
+static void mmove_to_str(MMove mv, char* buffer) {
 	ASSERT(buffer);
 	addr_to_str(mv.sa, buffer);
 	addr_to_str(mv.ta, buffer + 2);

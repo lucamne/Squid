@@ -15,7 +15,7 @@ static void run_search(void* ms) {
 	// send bestmove
 	char info_buff[16];
 	cpy_chars(info_buff, "bestmove ", 9);
-	move_to_str(bestmove, info_buff + 9);
+	mmove_to_str(bestmove, info_buff + 9);
 	if (info_buff[13] == ' ') {
 		info_buff[13] = '\n';
 		info_buff[14] = '\0';
