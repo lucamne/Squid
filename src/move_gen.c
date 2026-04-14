@@ -316,12 +316,12 @@ int init_move(Move *move, int sa, int ta) {
 	board[sa] = sid;
 	if (illegal) return 0;
 
-	move->sa = sa;
-	move->ta = ta;
+	move->mv.sa = sa;
+	move->mv.ta = ta;
 	move->castle_rights = castle_rights;
 	move->ep_addr = ep_addr;
 	move->halfmoves = halfmoves;
-	move->promo = EMPTY;
+	move->mv.promo = EMPTY;
 	move->game_hash = game_hash;
 	return 1;
 }
@@ -348,24 +348,24 @@ static int gen_promos(Move *ml, int id, int ta) {
 		if (!init_move(ml + mi, a, ta))
 			return 0;
 		mi++;
-		ml[mi - 1].promo = WN;
+		ml[mi - 1].mv.promo = WN;
 		mi += init_move(ml + mi, a, ta);
-		ml[mi - 1].promo = WB;
+		ml[mi - 1].mv.promo = WB;
 		mi += init_move(ml + mi, a, ta);
-		ml[mi - 1].promo = WR;
+		ml[mi - 1].mv.promo = WR;
 		mi += init_move(ml + mi, a, ta);
-		ml[mi - 1].promo = WQ;
+		ml[mi - 1].mv.promo = WQ;
 	} else {
 		if (!init_move(ml + mi, a, ta))
 			return 0;
 		mi++;
-		ml[mi - 1].promo = BN;
+		ml[mi - 1].mv.promo = BN;
 		mi += init_move(ml + mi, a, ta);
-		ml[mi - 1].promo = BB;
+		ml[mi - 1].mv.promo = BB;
 		mi += init_move(ml + mi, a, ta);
-		ml[mi - 1].promo = BR;
+		ml[mi - 1].mv.promo = BR;
 		mi += init_move(ml + mi, a, ta);
-		ml[mi - 1].promo = BQ;
+		ml[mi - 1].mv.promo = BQ;
 	}
 	ASSERT(mi == 4);
 	return mi;
@@ -805,8 +805,8 @@ void unmake_move(Move *move) {
 	castle_rights = move->castle_rights;
 	game_hash = move->game_hash;
 
-	const int s = move->sa;
-	const int e = move->ta;
+	const int s = move->mv.sa;
+	const int e = move->mv.ta;
 	int eid = board[e];
 	PIECE ept = piece_type[eid];
 
@@ -818,8 +818,8 @@ void unmake_move(Move *move) {
 	// ummove piece and handle special cases
 	//
 	// promotion
-	if (move->promo != EMPTY) {
-		ASSERT(move->promo != OFF_BOARD);
+	if (move->mv.promo != EMPTY) {
+		ASSERT(move->mv.promo != OFF_BOARD);
 		COLOR c = piece_color[eid];
 		ASSERT(c == WHITE || c == BLACK);
 		ASSERT(piece_type[eid] > WP || piece_type[eid] <= BQ);
@@ -865,8 +865,8 @@ void unmake_move(Move *move) {
 // assume addresses are valid
 void make_move(Move *move) {
 	// start and end squares
-	int s = move->sa;
-	int e = move->ta;
+	int s = move->mv.sa;
+	int e = move->mv.ta;
 	int sid = board[s];
 	PIECE spt = piece_type[sid];
 
@@ -886,29 +886,29 @@ void make_move(Move *move) {
 	// move piece in mailbox and handle special cases
 	//
 	// promotion
-	if (move->promo != EMPTY) {
+	if (move->mv.promo != EMPTY) {
 		// white assertions
 		ASSERT(		side_to_move == BLACK || 
 				(spt == WP && 
 				 addr_to_rank(s) == 7 && 
 				 addr_to_rank(e) == 8));
 		ASSERT(		side_to_move == BLACK || 
-				(move->promo >= WN && 
-				 move->promo <= WQ));
+				(move->mv.promo >= WN && 
+				 move->mv.promo <= WQ));
 		// black assertions
 		ASSERT(		side_to_move == WHITE || 
 				(spt == BP && 
 				 addr_to_rank(s) == 2  && 
 				 addr_to_rank(e) == 1));
 		ASSERT(		side_to_move == WHITE || 
-				(move->promo >= BN && 
-				 move->promo <= BQ));
+				(move->mv.promo >= BN && 
+				 move->mv.promo <= BQ));
 
 		move_piece(sid, e);
 		hash_piece(piece_type[sid], e);
 
 		remove_id(sid);
-		piece_type[sid] = move->promo;
+		piece_type[sid] = move->mv.promo;
 		add_id(sid);
 
 		hash_piece(piece_type[sid], e);
@@ -1075,10 +1075,10 @@ int make_manual_move(const char* mv, int len) {
 	Move ml[256];
 	int mi = gen_moves(ml);
 	for (int i = 0; i < mi; i++) {
-		if (		ml[i].sa == sa && 
-				ml[i].ta == ta && 
-				(ml[i].promo == wp || 
-				 ml[i].promo == bp)) {
+		if (		ml[i].mv.sa == sa && 
+				ml[i].mv.ta == ta && 
+				(ml[i].mv.promo == wp || 
+				 ml[i].mv.promo == bp)) {
 			make_move(ml + i);
 			return 0;
 		}

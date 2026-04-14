@@ -58,14 +58,12 @@ static void register_piece(PIECE p, int addr) {
 }
 
 
-// Extract an integer from a string given a string and 
-// starting position of number withing string
-// Assume number is terminated by a space or null terminating byte
-static int extract_int_from_str(char* str, int pos) {
-	ASSERT(str[pos] != ' ');
-
+// Extract an integer from a string
+// Integer should begin at position 0
+static int extract_int_from_str(char* str) {
+	int pos = 0;
 	int num_len = 0;
-	while (str[pos] != ' ' && str[pos] != '\0') {
+	while (str[pos] >= '0' && str[pos] <= '9') {
 		num_len++;
 		pos++;
 	}
@@ -220,14 +218,14 @@ int load_position(char* fen) {
 	// halfmove clock
 	pos++;
 	if (fen[pos] == ' ') return 1;
-	halfmoves = extract_int_from_str(fen, pos);
+	halfmoves = extract_int_from_str(fen + pos);
 
 	while (fen[++pos] != ' ');	// jump to end of integer
 
 	// move counter
 	pos++;
 	if (fen[pos] == ' ') return 1;
-	moves = extract_int_from_str(fen, pos);
+	moves = extract_int_from_str(fen + pos);
 
 	// init history
 	history[0] = game_hash;
