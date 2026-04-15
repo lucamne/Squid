@@ -1058,15 +1058,19 @@ int make_manual_move(const char* mv, int len) {
 			case 'q':
 				wp = WQ;
 				bp = BQ;
+				break;
 			case 'r':
 				wp = WR;
 				bp = BR;
+				break;
 			case 'b':
 				wp = WB;
 				bp = BB;
+				break;
 			case 'n':
 				wp = WN;
 				bp = BN;
+				break;
 			default:
 				return 1;
 		}

@@ -1,1 +1,3 @@
 /.vs
+.vs/VSWorkspaceState.json
+*.sqlite
