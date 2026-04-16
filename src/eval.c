@@ -12,6 +12,8 @@ static int wp_mobility(void) {
 		// advance
 		if (pt_at_addr(a - 10) == EMPTY) {
 			n_moves++;
+			if (addr_to_rank(a) == 7)
+				n_moves += 3;
 			if (addr_to_rank(a) == 2 && pt_at_addr(a - 20) == EMPTY) {
 				n_moves++;
 			}
@@ -19,9 +21,13 @@ static int wp_mobility(void) {
 		// captures
 		if (piece_color[board[a - 9]] == BLACK || ep_addr == a - 9) {
 			n_moves++;
+			if (addr_to_rank(a) == 7)
+				n_moves += 3;
 		}
 		if (piece_color[board[a - 11]] == BLACK || ep_addr == a - 11) {
 			n_moves++;
+			if (addr_to_rank(a) == 7)
+				n_moves += 3;
 		}
 	}
 	return n_moves;
@@ -41,15 +47,21 @@ static int bp_mobility(void) {
 		// advance
 		if (pt_at_addr(a + 10) == EMPTY) {
 			n_moves++;
+			if (addr_to_rank(a) == 2)
+				n_moves += 3;
 			if (addr_to_rank(a) == 7 && pt_at_addr(a + 20) == EMPTY) {
 				n_moves++;
 			}
 		}
 		// captures
 		if (piece_color[board[a + 9]] == WHITE || ep_addr == a + 9) {
+			if (addr_to_rank(a) == 2)
+				n_moves += 3;
 			n_moves++;
 		}
 		if (piece_color[board[a + 11]] == WHITE || ep_addr == a + 11) {
+			if (addr_to_rank(a) == 2)
+				n_moves += 3;
 			n_moves++;
 		}
 	}
@@ -309,9 +321,9 @@ static int is_repeat_position(void) {
 	return 0;
 }
 
-// Return an avaluation of the pawn structure in centipawns
-// Evaluation is from color 'c's perspective
-static int pawn_structure_eval(COLOR c) {
+// Return number of isolated, doubled, and blocked pawns of COLOR c
+// If pawns are doubled only one of them is counted as bad
+static int bad_pawns(COLOR c) {
 	ASSERT(c == WHITE || c == BLACK);
 	int *pid_arr;
 	int np;
@@ -323,40 +335,28 @@ static int pawn_structure_eval(COLOR c) {
 		np = p_count(BP);
 	}
 
+	int bad_pawns = 0;
+
 	char file_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-	int score = 0;
 	for (int i = 0; i < np; i++) {
 		int id = pid_arr[i];
 		int a = piece_addr[id];
-		int rank = addr_to_rank(a);
-		if (c == BLACK) rank -= 9;
 		file_count[addr_to_file(a) - 1]++;
-
-		switch (rank) {
-			case 6:
-				score += 5;
-			case 7:
-				score += 10;
-			default:;
-		}
 	}
 
-	const int doubled = 5;
-	const int isolated = 5;
 	for (int i = 0; i < 8; i++) {
 		int cnt = file_count[i];
 		if (cnt) {
-			score -= (cnt - 1) * doubled;
-
+			bad_pawns += cnt - 1;
 			if (i == 0 && !file_count[1])
-				score -= cnt * isolated;
+				bad_pawns += cnt;
 			else if (i == 7 && !file_count[6])
-				score -= cnt * isolated;
+				bad_pawns += cnt;
 			else if (!file_count[i - 1] && !file_count[i + 1])
-				score -= cnt * isolated;
+				bad_pawns += cnt;
 		}
 	}
-	return score;
+	return bad_pawns;
 }
 
 // Evaluate position from side_to_move's perspective
@@ -371,7 +371,10 @@ int evaluate(void) {
 	const int B = 300;
 	const int N = 300;
 	const int P = 100;
+	// mobility
 	const int MOB = 10;
+	// doubled isolated and blocked pawns
+	const int DIB = 50;
 
 	if (halfmoves == 50) return 0;
 	int score = K * (material_counts[WK - 2] - material_counts[BK - 2]) +
@@ -381,10 +384,12 @@ int evaluate(void) {
 		N * (material_counts[WN - 2] - material_counts[BN - 2]) +
 		P * (material_counts[WP - 2] - material_counts[BP - 2]);
 
-	score += MOB * mobility();
+	if (score > 0 && score < 400 && !p_count(WP)) return 0;
+	else if (score < 0 && score > -400 && !p_count(BP)) return 0;
 
-	score += pawn_structure_eval(WHITE);
-	score -= pawn_structure_eval(BLACK);
+	score += MOB * mobility();
+	score -= DIB * (bad_pawns(WHITE) - bad_pawns(BLACK));
+
 
 	if (side_to_move == BLACK) score *= -1;
 	return score;
