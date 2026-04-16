@@ -1,7 +1,9 @@
 Improving eval
-	- pawn metrics: isolatde, doubled, passed, advanced
-Improving search
-	- add principle variation searching
+	- opening and endgame valuations
+	- piece square tables
+
+
+
 Improving move gen
 	- implement attack bitboards
 		- one bitboard for each piece containing attacked squares
