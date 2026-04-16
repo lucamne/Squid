@@ -577,7 +577,6 @@ static int piece_square_eval(void) {
 }
 
 int evaluate(void) {
-
 	if (is_draw()) return 0;
 
 	int score = piece_square_eval();
