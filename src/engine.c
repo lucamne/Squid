@@ -1,5 +1,6 @@
 #include "engine.h"
 #include "core.h"
+#include "string_processing.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -9,81 +10,11 @@
 // Input search time in ms or 0 for infinite search
 // If searching infinitely wait for halt command
 static void run_search(void* ms) {
-	MMove bestmove = iterative_ab_search(*(ULL*)ms);
+	iterative_ab_search(*(ULL*)ms);
 	free(ms);
-
-	// send bestmove
-	char info_buff[16];
-	cpy_chars(info_buff, "bestmove ", 9);
-	mmove_to_str(bestmove, info_buff + 9);
-	if (info_buff[13] == ' ') {
-		info_buff[13] = '\n';
-		info_buff[14] = '\0';
-	} else {
-		info_buff[14] = '\n';
-		info_buff[15] = '\0';
-	}
-	platform_send_uci_command(info_buff);
-
 	uci_search_active = 0;
 	platform_end_thread();
 }
-
-
-// Return 1 if whitespace 0 if not
-static int is_whitespace(char c) {
-	return (c == ' ' || c == '\n' || c == '\f' || c == '\r' || c == '\t' || c == '\v');
-}
-
-// Return 1 if next token in 'cmd' equals 'str'
-// Return 0 if not equal
-// Assume str is null terminated
-// Assume cmd is terminated by some type of whitespace
-static int next_token_eq(const char* cmd, const char* str) {
-	ASSERT(cmd && str);
-	for (int i = 0;; i++) {
-		if (is_whitespace(cmd[i])) {
-			if (str[i] == '\0')
-				return 1;
-			return 0;
-		}
-		if (cmd[i] != str[i])
-			return 0;
-	}
-}
-
-// Return the index of next token
-// Assume cmd is '\n' terminated
-// Return -1 if no further tokens
-static int next_token_pos(const char* cmd) {
-	ASSERT(cmd);
-	int i = 0;
-	int whitespace_found = 0;
-	while (1) {
-		char c = cmd[i];
-		if (c == '\n')
-			return -1;
-		if (is_whitespace(c))
-			whitespace_found = 1;
-		else if (whitespace_found)
-			return i;
-		i++;
-	}
-}
-
-// Return number of characters until whitespace
-// Assume cmd is '\n' terminated
-static int next_whitespace(const char* cmd) {
-	ASSERT(cmd);
-	for (int i = 0;; i++) {
-		char c = cmd[i];
-		if (is_whitespace(c))
-			return i;
-	}
-}
-
-// TODO remove when no longer needed
-#include "testing.c"
 
 // Process uci 'moves' command
 static void uci_moves(const char* cmd) {
@@ -137,6 +68,7 @@ static void uci_position(const char* cmd) {
 		}
 
 		cpy_chars(fen + fen_pos, cmd, curr_len);
+		fen[fen_pos + curr_len] = '\0';
 		if (load_position(fen)) {
 			uci_pos_loaded = 0;
 			return;
@@ -144,15 +76,14 @@ static void uci_position(const char* cmd) {
 			uci_pos_loaded = 1;
 		}
 	}
-	// print_board();
 
 	ni = next_token_pos(cmd);
 	if (ni == -1) return;
 	cmd += ni;
 	if (!next_token_eq(cmd, "moves")) return;
 	uci_moves(cmd);
-	// print_board();
 }
+
 
 // Process uci 'go' command
 static void uci_go(const char* cmd) {
@@ -166,6 +97,7 @@ static void uci_go(const char* cmd) {
 	ULL wtime = 0ULL;
 	ULL btime = 0ULL;
 	ULL movetime = 0ULL;
+	char infinite = 0;
 
 	int ni = next_token_pos(cmd);
 	while (ni != -1) {
@@ -176,47 +108,38 @@ static void uci_go(const char* cmd) {
 			cmd += ni;
 			// extract 'movetime' number
 			int ws = next_whitespace(cmd);
-			for (int i = 0; i < ws; i++) {
-				if (cmd[i] < '0' || cmd[i] > '9') {
-					movetime = 0ULL;
-					break;
-				}
-				movetime *= 10;
-				movetime += cmd[i] - '0';
-			}
+			int t = str_to_positive_int(cmd, ws);
+			if (t == -1) break;
+			else movetime = (ULL)t;
+
 		} else if (next_token_eq(cmd, "wtime")) {
 			ni = next_token_pos(cmd);
 			if (ni == -1) break;
 			cmd += ni;
-			// extract 'movetime' number
+			// extract 'wtime' number
 			int ws = next_whitespace(cmd);
-			for (int i = 0; i < ws; i++) {
-				if (cmd[i] < '0' || cmd[i] > '9') {
-					wtime = 0ULL;
-					break;
-				}
-				wtime *= 10;
-				wtime += cmd[i] - '0';
-			}
+			int t = str_to_positive_int(cmd, ws);
+			if (t == -1) break;
+			else wtime = (ULL)t;
+
 		} else if (next_token_eq(cmd, "btime")) {
 			ni = next_token_pos(cmd);
 			if (ni == -1) break;
 			cmd += ni;
-			// extract 'movetime' number
+			// extract 'btime' number
 			int ws = next_whitespace(cmd);
-			for (int i = 0; i < ws; i++) {
-				if (cmd[i] < '0' || cmd[i] > '9') {
-					btime = 0ULL;
-					break;
-				}
-				btime *= 10;
-				btime += cmd[i] - '0';
-			}
+			int t = str_to_positive_int(cmd, ws);
+			if (t == -1) break;
+			else btime = (ULL)t;
+		} else if (next_token_eq(cmd, "infinite")) {
+			infinite = 1;
 		}
 		ni = next_token_pos(cmd);
 	}
 
-	if (movetime > 0) {
+	if (infinite) {
+		*ms = 0ULL;
+	} else if (movetime > 0) {
 		*ms = movetime;
 	} else if (side_to_move == WHITE && wtime > 0) {
 		*ms = wtime / 20;
@@ -233,6 +156,8 @@ static void uci_go(const char* cmd) {
 /// Defined in engine.h
 /// These functions are called by platform layer
 
+// delete when done, used for perft test right now
+#include "testing.c"
 void engine_send_uci_command(const char* cmd) {
 	ASSERT(cmd);
 	while (1) {
@@ -265,6 +190,7 @@ void engine_send_uci_command(const char* cmd) {
 
 			// non standard testing command
 		} else if (!uci_search_active && next_token_eq(cmd, "perftsuite")) {
+
 			perft_test(5);
 			return;
 
@@ -275,7 +201,6 @@ void engine_send_uci_command(const char* cmd) {
 			// non standard extended command
 		} else if (!uci_search_active && uci_pos_loaded && next_token_eq(cmd, "moves")) {
 			uci_moves(cmd);
-			// print_board();
 			return;
 		}
 

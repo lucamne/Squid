@@ -1,5 +1,6 @@
 #include "core.h"
 #include "eval.h"
+#include "string_processing.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Pseudo-Random Number Generator
@@ -58,29 +59,6 @@ static void register_piece(PIECE p, int addr) {
 	hash_piece(p, addr);
 }
 
-
-// Extract an integer from a string
-// Integer should begin at position 0
-static int extract_int_from_str(char* str) {
-	int pos = 0;
-	int num_len = 0;
-	while (str[pos] >= '0' && str[pos] <= '9') {
-		num_len++;
-		pos++;
-	}
-	pos -= num_len;
-
-	int out = 0;
-	for (;num_len > 0; num_len--) {
-		int digit = str[pos] - '0';
-		for (int i = 0; i < num_len - 1; i++) 
-			digit *= 10;
-
-		out += digit;
-		pos++;
-	}
-	return out;
-}
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Public Functions
@@ -219,14 +197,17 @@ int load_position(char* fen) {
 	// halfmove clock
 	pos++;
 	if (fen[pos] == ' ') return 1;
-	halfmoves = extract_int_from_str(fen + pos);
-
-	while (fen[++pos] != ' ');	// jump to end of integer
+	int ws = next_whitespace(fen + pos);
+	halfmoves = str_to_positive_int(fen + pos, ws);
+	if (halfmoves == -1) return 1;
+	pos += ws;
 
 	// move counter
 	pos++;
 	if (fen[pos] == ' ') return 1;
-	moves = extract_int_from_str(fen + pos);
+	ws = next_whitespace(fen + pos);
+	moves = str_to_positive_int(fen + pos, ws);
+	if (moves == -1) return 1;
 
 	// init history
 	history[0] = game_hash;
@@ -235,11 +216,6 @@ int load_position(char* fen) {
 	return 0;
 }
 
-void wipe_tt(void) {
-	for (int i = 0; i < TTABLE_SIZE; i++) {
-		ttable[i].active = 0;
-	}
-}
 
 void init(void) {
 	// init offboard
@@ -263,8 +239,6 @@ void init(void) {
 	uci_pos_loaded = 0;
 	uci_search_active = 0;
 	uci_halt_requested = 0;
-
-	nodes_searched = 0;
 	
 	init_eval();
 }

@@ -1,6 +1,7 @@
 #include "core.h"
 #include <string.h>
 
+#include "string_processing.h"
 
 // remove id from id list
 // assume piece_type is set correctly
