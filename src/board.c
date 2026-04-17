@@ -1,4 +1,5 @@
 #include "core.h"
+#include "eval.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Pseudo-Random Number Generator
@@ -264,4 +265,6 @@ void init(void) {
 	uci_halt_requested = 0;
 
 	nodes_searched = 0;
+	
+	init_eval();
 }

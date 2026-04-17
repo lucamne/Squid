@@ -39,7 +39,8 @@ ULL platform_get_time_ms(void) {
 }
 
 void platform_send_uci_command(const char* cmd) {
-	printf("%s", cmd);
+	fprintf(stdout, "%s", cmd);
+	fflush(stdout);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

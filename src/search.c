@@ -4,7 +4,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "eval.c"
+#include "eval.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// TYPES
@@ -238,12 +238,12 @@ Search_Result ab_search(AB_Params params) {
 }
 
 // send search info
-static void send_pv(int depth, float cp, ULL time_elapsed, ULL nodes, ULL nps, Variation* pv) {
+static void send_pv(int depth, int cp, ULL time_elapsed, ULL nodes, ULL nps, Variation* pv) {
 	ASSERT(pv);
 	char info_buff[INFO_BUFF_SIZE];	
 
 	// format info string
-	snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %.2f time %lld nodes %lld nps %lld pv ",
+	snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %d time %lld nodes %lld nps %lld pv ",
 			depth, cp, time_elapsed, nodes, nps);
 
 	// extract principle variation
@@ -303,7 +303,7 @@ MMove iterative_ab_search(ULL search_time) {
 		ULL time_elapsed = platform_get_time_ms() - start_time;
 		if (!time_elapsed) time_elapsed = 1;
 		ULL nps = nodes_searched * 1000ULL / time_elapsed;
-		float cp = (float)res.eval / 100.0f;
+		int cp = res.eval;
 		if (side_to_move == BLACK) cp = -cp;
 
 		if (res.halt) {
@@ -311,7 +311,7 @@ MMove iterative_ab_search(ULL search_time) {
 				res = prev_res;
 				memcpy(curr_pv.line, prev_pv.line, prev_pv.count * sizeof(MMove));
 				curr_pv.count = prev_pv.count;
-				cp = (float)res.eval / 100.0f;
+				cp = res.eval;
 				if (side_to_move == BLACK) cp = -cp;
 			}
 

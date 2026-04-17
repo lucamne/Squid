@@ -167,12 +167,12 @@ TT_Entry ttable[TTABLE_SIZE];		// transposition table
 ULL nodes_searched;			// number of nodes searched in current search
 					// should be reset at the start of search
 
-// used to track uci state
+
+/* used to track uci state*/
 int uci_cmd_received;			// has UCI 'uci' command been received
 int uci_pos_loaded;			// is a position loaded
 int uci_search_active;			// is search running
 int uci_halt_requested;			// search halt is requested
-
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Core API
