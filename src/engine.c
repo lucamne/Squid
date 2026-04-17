@@ -144,13 +144,14 @@ static void uci_position(const char* cmd) {
 			uci_pos_loaded = 1;
 		}
 	}
-	print_board();
+	// print_board();
 
 	ni = next_token_pos(cmd);
 	if (ni == -1) return;
 	cmd += ni;
 	if (!next_token_eq(cmd, "moves")) return;
 	uci_moves(cmd);
+	// print_board();
 }
 
 // Process uci 'go' command
@@ -162,26 +163,67 @@ static void uci_go(const char* cmd) {
 	ULL* ms = malloc(sizeof(ULL));
 	*ms = 0ULL;
 
+	ULL wtime = 0ULL;
+	ULL btime = 0ULL;
+	ULL movetime = 0ULL;
+
 	int ni = next_token_pos(cmd);
-	if (ni != -1) {
+	while (ni != -1) {
 		cmd += ni;
 		if (next_token_eq(cmd, "movetime")) {
 			ni = next_token_pos(cmd);
-			if (ni != -1) {
-				cmd += ni;
-				// extract 'movetime' number
-				int ws = next_whitespace(cmd);
-				for (int i = 0; i < ws; i++) {
-					if (cmd[i] < '0' || cmd[i] > '9') {
-						*ms = 0ULL;
-						break;
-					}
-					*ms *= 10;
-					*ms += cmd[i] - '0';
+			if (ni == -1) break;
+			cmd += ni;
+			// extract 'movetime' number
+			int ws = next_whitespace(cmd);
+			for (int i = 0; i < ws; i++) {
+				if (cmd[i] < '0' || cmd[i] > '9') {
+					movetime = 0ULL;
+					break;
 				}
+				movetime *= 10;
+				movetime += cmd[i] - '0';
+			}
+		} else if (next_token_eq(cmd, "wtime")) {
+			ni = next_token_pos(cmd);
+			if (ni == -1) break;
+			cmd += ni;
+			// extract 'movetime' number
+			int ws = next_whitespace(cmd);
+			for (int i = 0; i < ws; i++) {
+				if (cmd[i] < '0' || cmd[i] > '9') {
+					wtime = 0ULL;
+					break;
+				}
+				wtime *= 10;
+				wtime += cmd[i] - '0';
+			}
+		} else if (next_token_eq(cmd, "btime")) {
+			ni = next_token_pos(cmd);
+			if (ni == -1) break;
+			cmd += ni;
+			// extract 'movetime' number
+			int ws = next_whitespace(cmd);
+			for (int i = 0; i < ws; i++) {
+				if (cmd[i] < '0' || cmd[i] > '9') {
+					btime = 0ULL;
+					break;
+				}
+				btime *= 10;
+				btime += cmd[i] - '0';
 			}
 		}
+		ni = next_token_pos(cmd);
 	}
+
+	if (movetime > 0) {
+		*ms = movetime;
+	} else if (side_to_move == WHITE && wtime > 0) {
+		*ms = wtime / 20;
+	} else if (side_to_move == BLACK && btime > 0) {
+		*ms = btime / 20;
+	}
+
 	platform_create_thread(run_search, (void*)ms);
 }
 
@@ -233,7 +275,7 @@ void engine_send_uci_command(const char* cmd) {
 			// non standard extended command
 		} else if (!uci_search_active && uci_pos_loaded && next_token_eq(cmd, "moves")) {
 			uci_moves(cmd);
-			print_board();
+			// print_board();
 			return;
 		}
 
