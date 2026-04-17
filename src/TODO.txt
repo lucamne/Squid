@@ -1,8 +1,5 @@
-Improving eval
-	- opening and endgame valuations
-	- piece square tables
-
-
+Alpha 1 release
+	- add current move output
 
 Improving move gen
 	- implement attack bitboards

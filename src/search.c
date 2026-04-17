@@ -1,12 +1,12 @@
 #include "engine.h"
 #include "core.h"
+#include "string_processing.h"
+#include "eval.h"
 
 #include <stdio.h>
 #include <string.h>
 
-#include "eval.h"
-
-////////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 /// TYPES
 
 // used for lower and upper bounds in search
@@ -42,6 +42,23 @@ typedef struct {
 } Search_Result;
 
 ////////////////////////////////////////////////////////////////////////////////
+/// Static Search Variables
+static ULL nodes_since_info_send;		// nodes since last time node info was sent
+static ULL nodes_searched;			// number of nodes searched in current search
+static ULL search_start_time;			// start time of search
+
+// modify transposition table size to control memory usage
+// table size must be power of 2 for fast modulo
+// update TTMOD accordingly
+#define TTABLE_SIZE 8388608
+// bit mask to translate hash to address within TABLE_SIZE
+// mask the lower part of hash with number of bits needed to represent
+// TTABLE_SIZE
+#define TTMOD 0b11111111111111111111111ull
+TT_Entry ttable[TTABLE_SIZE];		// transposition table
+					// should be wiped before new game
+
+////////////////////////////////////////////////////////////////////////////////
 /// FUNCTIONS
 
 // return table entry of current position
@@ -52,14 +69,30 @@ static TT_Entry tt_search(void) {
 // add current position to transposition table
 static void tt_add(NODE_TYPE nt, int depth, int eval) {
 	ULL i = game_hash & TTMOD;
-	ttable[i] = (TT_Entry){1, game_hash, (char)depth, nt, eval};
+	if (ttable[i].depth < depth)
+		ttable[i] = (TT_Entry){1, game_hash, (char)depth, nt, eval};
 }
 
+// sends just node info
+static void send_node_info(void) {
+	ULL time_elapsed = platform_get_time_ms() - search_start_time;
+	if (!time_elapsed) time_elapsed = 1;
+	ULL nps = nodes_searched * 1000ULL / time_elapsed;
+
+	char info_buff[INFO_BUFF_SIZE];	
+	// format info string
+	snprintf(info_buff, INFO_BUFF_SIZE, "info nodes %lld nps %lld \n", nodes_searched, nps);
+	platform_send_uci_command(info_buff);
+}
 
 // "quiet search"
 static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	int static_eval = evaluate();
 	nodes_searched++;
+	if(++nodes_since_info_send >= 10000000ULL) {
+		nodes_since_info_send = 0ULL;
+		send_node_info();
+	}
 
 	// stand pat
 	int best_value = static_eval;
@@ -94,6 +127,7 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	}
 	return best_value;
 }
+
 
 // perform alpha beta search to depth, stopping if ms_cutoff is reached
 // see AB_Params definition in "search.h" for description of parameters
@@ -181,8 +215,23 @@ Search_Result ab_search(AB_Params params) {
 		}
 	}
 
+
 	// maximize eval
 	for (int i = 0; i < n_moves; i++) {
+
+
+		if (params.is_top && depth > 6) {
+			char info_buff[INFO_BUFF_SIZE];
+			snprintf(info_buff, INFO_BUFF_SIZE, "info currmove ");
+			mmove_to_str(ml[i].mv, info_buff + 14);
+
+			int p;
+			if (ml[i].mv.promo == EMPTY) p = 0;
+			else p = 1;
+			snprintf(info_buff + 19 + p, INFO_BUFF_SIZE, "currmovenumber %d\n", i + 1);
+			platform_send_uci_command(info_buff);
+		}
+
 		make_move(ml + i);
 		AB_Params p = {
 			depth - 1, 
@@ -221,6 +270,7 @@ Search_Result ab_search(AB_Params params) {
 				nt = UB;
 			break;
 		}
+
 	}
 
 	// no moves and king not attacked is stalemate
@@ -263,16 +313,31 @@ static void send_pv(int depth, int cp, ULL time_elapsed, ULL nodes, ULL nps, Var
 	platform_send_uci_command(info_buff);
 }
 
-MMove iterative_ab_search(ULL search_time) {
-	nodes_searched = 0;
+static void send_bestmove(MMove bestmove) {
+	char info_buff[16];
+	cpy_chars(info_buff, "bestmove ", 9);
+	mmove_to_str(bestmove, info_buff + 9);
+	if (info_buff[13] == ' ') {
+		info_buff[13] = '\n';
+		info_buff[14] = '\0';
+	} else {
+		info_buff[14] = '\n';
+		info_buff[15] = '\0';
+	}
+	platform_send_uci_command(info_buff);
+}
 
-	const ULL start_time = platform_get_time_ms();
-	ULL ms_cutoff = search_time + start_time;
+void iterative_ab_search(ULL search_time) {
+	nodes_searched = 0ULL;
+	search_start_time = platform_get_time_ms();
+	nodes_since_info_send = 0ULL;
+
+	ULL ms_cutoff = search_time + search_start_time;
 
 	char is_timed = 1;
 	if (search_time == 0) is_timed = 0;
 	int depth = 1;
-	const int asp_window = 50;
+	const int asp_window = 35;
 	int alpha = N_INF - depth - 1 - asp_window;
 	int beta = INF + depth + 1 + asp_window;
 
@@ -300,11 +365,10 @@ MMove iterative_ab_search(ULL search_time) {
 		Search_Result res = ab_search(p);
 
 		// statistics
-		ULL time_elapsed = platform_get_time_ms() - start_time;
+		ULL time_elapsed = platform_get_time_ms() - search_start_time;
 		if (!time_elapsed) time_elapsed = 1;
 		ULL nps = nodes_searched * 1000ULL / time_elapsed;
 		int cp = res.eval;
-		if (side_to_move == BLACK) cp = -cp;
 
 		if (res.halt) {
 			if (curr_pv.count < depth) {
@@ -312,11 +376,11 @@ MMove iterative_ab_search(ULL search_time) {
 				memcpy(curr_pv.line, prev_pv.line, prev_pv.count * sizeof(MMove));
 				curr_pv.count = prev_pv.count;
 				cp = res.eval;
-				if (side_to_move == BLACK) cp = -cp;
 			}
 
 			send_pv(depth, cp, time_elapsed, nodes_searched, nps, &curr_pv);
-			return curr_pv.line[0];
+			send_bestmove(curr_pv.line[0]);
+			return;
 		}
 
 		if (res.eval <= alpha) {
@@ -336,11 +400,19 @@ MMove iterative_ab_search(ULL search_time) {
 		send_pv(depth, cp, time_elapsed, nodes_searched, nps, &curr_pv);
 
 		// checkmate
-		if (res.eval >= INF || res.eval <= N_INF) 
-			return curr_pv.line[0];
+		if (res.eval >= INF || res.eval <= N_INF) {
+			send_bestmove(curr_pv.line[0]);
+			return;
+		}
 
 		alpha = res.eval - asp_window;
 		beta = res.eval + asp_window;
 		depth++;
+	}
+}
+
+void wipe_tt(void) {
+	for (int i = 0; i < TTABLE_SIZE; i++) {
+		ttable[i].active = 0;
 	}
 }

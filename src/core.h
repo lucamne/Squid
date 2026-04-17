@@ -153,21 +153,6 @@ ULL game_hash;
 ULL history[512];
 int history_cnt;
 
-// modify transposition table size to control memory usage
-// table size must be power of 2 for fast modulo
-// update TTMOD accordingly
-#define TTABLE_SIZE 8388608
-// bit mask to translate hash to address within TABLE_SIZE
-// mask the lower part of hash with number of bits needed to represent
-// TTABLE_SIZE
-#define TTMOD 0b11111111111111111111111ull
-TT_Entry ttable[TTABLE_SIZE];		// transposition table
-					// should be wiped before new game
-
-ULL nodes_searched;			// number of nodes searched in current search
-					// should be reset at the start of search
-
-
 /* used to track uci state*/
 int uci_cmd_received;			// has UCI 'uci' command been received
 int uci_pos_loaded;			// is a position loaded
@@ -233,6 +218,7 @@ int init_move(Move *move, int sa, int ta);
 
 int load_position(char* fen);
 // Load position from FEN
+// Expect fen to be null terminated
 // Return 1 on failure 0 on success
 
 void wipe_tt(void);
@@ -244,7 +230,7 @@ void init(void);
 
 /* search.c */
 
-MMove iterative_ab_search(ULL search_time);
+void iterative_ab_search(ULL search_time);
 // Search for best move in current position
 // Input search time in ms or 0 to search until halt signal
 
@@ -310,110 +296,6 @@ static void add_id(int id) {
 	int *pid_arr = piece_ids[pt - 2];
 	int mc = ++material_counts[pt - 2];
 	pid_arr[mc - 1] = id;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-/// String Processing
-
-// Copy count chars from src to dest
-// Assume valid bounds
-static void cpy_chars(char* dest, const char* src, int count) {
-	ASSERT(dest && src);
-	for (int i = 0; i < count; i++) {
-		dest[i] = src[i];
-	}
-}
-
-// Convert a max of 'max' digits of i to chars
-// and store in dest
-// If i has more digits than max, leftmost digits
-// are cut off
-// Return characters written
-static int int_to_str(char *dest, int i, int max) {
-	ASSERT(dest);
-	int num_digs = 0;
-	int t = i;
-
-	while (t != 0 && num_digs <= max) {
-		num_digs++;
-		t /= 10;
-	}
-
-	if (num_digs < max && i < 0) 
-		num_digs++;
-
-	for (t = 0; t < num_digs; t++) {
-		if (i == 0)
-			dest[num_digs - t -1] = '-';
-		else
-			dest[num_digs - t - 1] = '0' + (i % 10);
-		i /= 10;
-	}
-	return num_digs;
-}
-
-// Convert chess square notation to board address
-// Assume buffer is not null
-// Return -1 if buffer does not contain valid square
-static int str_to_addr(const char* buffer) {
-	ASSERT(buffer);
-
-	char file = buffer[0];
-	char rank = buffer[1];
-	if (file < 'a' || file > 'h' || rank < '0' || rank > '8')
-		return -1;
-
-	int addr = 9 - (rank - '0' - 1);
-	addr *= 10;
-	addr += file - 'a' + 1;
-	return addr;
-}
-
-// Converts promo PIECE to ascii char
-static char promo_to_char(PIECE p) {
-	switch(p) {
-		case BR:
-		case WR:
-			return 'r';
-		case BN:
-		case WN:
-			return 'n';
-		case BB:
-		case WB:
-			return 'b';
-		case BQ:
-		case WQ:
-			return 'q';
-		default:
-			return ' ';
-	}
-}
-
-// Convert mailbox address to chess square notation and store in buffer
-// Assume buffer is allocated and is at least two characters long
-// Do not assume buffer is null terminated
-// Assume addr is within range [0-63]
-static void addr_to_str(int addr, char* buffer) {
-	ASSERT(on_board(addr));
-	ASSERT(buffer);
-
-	char rank = (char)addr_to_rank(addr);
-	char file = (char)addr_to_file(addr) - 1;
-	file += 'a';
-
-	buffer[0] = file;
-	buffer[1] = rank + '0';
-}
-
-// Convert move to algebraic notation and store in buffer
-// Assume buffer is allocated and is at least two characters long
-// Do not assume buffer is null terminated
-// Assume addr is within range [0-63]
-static void mmove_to_str(MMove mv, char* buffer) {
-	ASSERT(buffer);
-	addr_to_str(mv.sa, buffer);
-	addr_to_str(mv.ta, buffer + 2);
-	buffer[4] = promo_to_char(mv.promo);
 }
 
 #endif

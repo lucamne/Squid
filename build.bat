@@ -26,10 +26,10 @@ if "%RELEASE%"=="1" (
     set CFLAGS=%CFLAGS% /O2 /DNDEBUG
     echo Building release
 ) else if "%PROFILE%"=="1" (
-    set CFLAGS=%CFLAGS% /Od /Zi /DNDEBUG
+    set CFLAGS=%CFLAGS% /Zi /DNDEBUG
     echo Building profiling
 ) else (
-    set CFLAGS=%CFLAGS% /Od /Zi
+    set CFLAGS=%CFLAGS% /Zi
     echo Building Debug
 )
 
