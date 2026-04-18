@@ -21,6 +21,30 @@
 ///////////////////////////////////////////////////////////////////////////////
 /// Types
 
+// Piece Types
+#define _PIECE unsigned int
+#define _EMPTY 0b0000u
+#define _OFF_BOARD 0b0010u
+#define WPAWN 0b0100u
+#define BPAWN 0b0101u
+#define WKNIGHT 0b0110u
+#define BKNIGHT 0b0111u
+#define WBISHOP 0b1000u
+#define BBISHOP 0b1001u
+#define WROOK 0b1010u
+#define BROOK 0b1011u
+#define WQUEEN 0b1100u
+#define BQUEEN 0b1101u
+#define WKING 0b1110u
+#define BKING 0b1111u
+#define CMASK 0b1u		// mask to extract color from piece
+
+// Colors
+#define _COLOR unsigned int
+#define _WHITE 0u
+#define _BLACK 1u
+
+/*
 // piece types
 typedef enum {
 	EMPTY = 0,
@@ -38,12 +62,15 @@ typedef enum {
 	BQ,
 	BK
 } PIECE;
+*/
 
+/*
 typedef enum {
 	NC = 0,			// No color
 	WHITE,
 	BLACK
 } COLOR;
+*/
 
 // evaluation type of node
 typedef enum {
@@ -78,7 +105,7 @@ typedef enum {
 typedef struct {
 	int sa;			// source address
 	int ta;			// target address
-	PIECE promo;		// promotion piece
+	_PIECE promo;		// promotion piece
 } MMove;
 
 // Info needed by the engine to execute a move
@@ -87,7 +114,7 @@ typedef struct {
 	unsigned char castle_rights;
 	ULL game_hash;
 	int ep_addr;
-	int cap_id;		// captured piece id
+	_PIECE cap_piece;	// captured piece
 	int halfmoves;
 } Move;
 
@@ -102,11 +129,14 @@ typedef struct {
  * ie: a8 index < a1 index < h1 index.
  * An excel sheet diagraming the board is stored in the project directory. 
  *
- * Each address contains an id to a piece. 
- * Use that id to find out info about piece.*/
-int board[120];
+ * Each address contains a bitfield of the where the rightmost bit is color
+ * (0 = white, 1 = black) and the next 3 bits determine piece type. 
+ * Use macros to extract info. */
+unsigned int board2[120];
 
-COLOR side_to_move;
+int wking_addr;
+int bking_addr;
+_COLOR side_to_move;		// 1 = black, 0 = white
 int halfmoves;			// halfmoves since last capture or pawn advance
 int moves;			// fullmove counter
 int ep_addr;			// en passant address
@@ -117,9 +147,11 @@ unsigned char castle_rights;	// [0-15] all combinations of castling rights
 #define k_CASTLE 0b0100
 #define q_CASTLE 0b1000
 
-int next_id;			// next available piece id
-int material_counts[12];	// count of each piece non empty/offboard piece
+_PIECE _material_counts[16];	// count of each piece type
+				// use 16 indices so PIECE macros
+				// can be used directly to index array
 
+/*
 // piece attributes indexed by id
 // indices 0 and 1 are EMPTY and OFF_BOARD
 // all EMPTY and OFF_BOARD pieces share the same ids
@@ -133,18 +165,20 @@ int piece_addr[66];		// address of piece indexed by id
 // dimension 1 = piece type; dimension 2 = ids
 // piece types index order {WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK}
 int piece_ids[12][64];
+*/
 
 /*
  * keys for generating position hash
- * 1 key for each piece at each square 
- * {WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK} x 120
- * 1 key for side to move is black (i = 1440)
- * 16 keys for all possible castling rights (i = 1441)
- * 1 key for each file of en passant square if any {8} (i = 1457) 
+ * 1 key for each 4 bit number at each square 
+ * {EMPTY, UNUSED, OFF_BOARD, UNUSED, WP, BP, WN, BN, WB, BB, WR, 
+ * BR, WQ, BQ, WK, BK} x 120
+ * 1 key for side to move is black (i = 1920)
+ * 16 keys for all possible castling rights (i = 1920)
+ * 1 key for each file of en passant square if any {8} (i = 1936) 
  *
  * Off board addresses are included in zobrist keys to avoid converting
  * from 120 based addresses to 64 based addresses.*/
-#define NUM_ZOBRIST_KEYS 1465
+#define NUM_ZOBRIST_KEYS 1936
 ULL zobrist_keys[NUM_ZOBRIST_KEYS];
 ULL game_hash;
 
@@ -169,7 +203,7 @@ int uci_halt_requested;			// search halt is requested
 ULL perft(int d);
 // Return total nodes found to ply 'd' in current position
 
-int is_square_attacked(int addr, COLOR c);
+int is_square_attacked(int addr, _COLOR c);
 // Return 1 if given square addr is attacked by color c
 // return 0 if not
 
@@ -237,17 +271,6 @@ void iterative_ab_search(ULL search_time);
 ///////////////////////////////////////////////////////////////////////////////
 /// Engine Utilities
 
-// return number of pieces of type p
-static int p_count(PIECE p) {
-	ASSERT(p >= WP && p <= BK);
-	return material_counts[p - 2];
-}
-
-// return piece type at board address
-static PIECE pt_at_addr(int addr) {
-	return piece_type[board[addr]];
-}
-
 // return 1 iff addr is on playable board
 static int on_board(int addr) {
 	return addr > 20 && addr < 99 && addr % 10 != 0 && addr %10 != 9;
@@ -267,35 +290,22 @@ static int addr_to_file(int addr) {
 }
 
 // add or remove PIECE p at 120 based addr to hash
-static void hash_piece(PIECE p, int addr) {
-	ASSERT(p >= WP && p <= BK);
+static void hash_piece(_PIECE p, int addr) {
+	ASSERT(_EMPTY >= 0 && p < BKING );
 	ASSERT(on_board(addr));
-	game_hash ^= zobrist_keys[120 * (p - 2) + addr];
+	game_hash ^= zobrist_keys[120 * p + addr];
 }
 
 static void hash_side_to_move(void) {
-	game_hash ^= zobrist_keys[1440];
+	game_hash ^= zobrist_keys[1920];
 }
 
 static void hash_castle(void) {
-	game_hash ^= zobrist_keys[(int)(1441u + (unsigned int)castle_rights)];
+	game_hash ^= zobrist_keys[(int)(1921u + (unsigned int)castle_rights)];
 }
 
 static void hash_ep(void) {
-	game_hash ^= zobrist_keys[1457 + (ep_addr % 10  - 1)];
-}
-
-// adds id to appropriate id list
-// assume piece_type is already set
-static void add_id(int id) {
-	PIECE pt = piece_type[id];
-	ASSERT(pt > OFF_BOARD && pt <= BK);
-	ASSERT(material_counts[WK - 2] <= 1);
-	ASSERT(material_counts[BK - 2] <= 1);
-
-	int *pid_arr = piece_ids[pt - 2];
-	int mc = ++material_counts[pt - 2];
-	pid_arr[mc - 1] = id;
+	game_hash ^= zobrist_keys[1936 + (ep_addr % 10  - 1)];
 }
 
 #endif
