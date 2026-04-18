@@ -34,8 +34,10 @@ Note: not all UCI commands are implemented yet. This will be an expanding list
 		the last position sent to the engine, the GUI should have sent a "ucinewgame" inbetween.
 	- go: start calculating on current position. Currently, this will search the position until
 		a stop command is received. A number of commands can follow go to describe how to search
-		- depth <x>: search only to ply x
 		- movetime <x>: search for x milliseconds
+		- wtime <x>: white remaining time
+		- btime <x>: black remaining time
+		- infinite: search until stop command
 	- stop: stop calculating ASAP
 	- quit: kill program ASAP
 	GUI to Engine (extended)
@@ -59,18 +61,18 @@ Note: not all UCI commands are implemented yet. This will be an expanding list
 		- time <x>: time searched in ms. Sent together with pv
 		- nodes: nodes searched
 		- nps: nodes per second
-
+		- currmove: current move being evaluated
+		- currmovenumbwe: current move number starting at 1
 	
 
-HANDSHAKE
+Example
 1. Engine boots
-	- init zobrist keys only once
 2. GUI sends "uci"
 3. Engine sends "id"
 4. Engine sends "uciok"
-5. GUI sends ucinewgame
-	- engine wipes transposition table
-6. GUI sends "go"
-7. Engine sends "info" while it searches
-8. GUI sends "stop"
-9. Engine sends "bestmove"
+5. GUI sends "ucinewgame"
+6. GUI sends "position startpos"
+7. GUI sends "go"
+8. Engine sends "info" while it searches
+9. GUI sends "stop"
+10. Engine sends "bestmove"
