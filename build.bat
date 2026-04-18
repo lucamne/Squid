@@ -4,7 +4,7 @@ setlocal ENABLEDELAYEDEXPANSION
 REM set sources and outputs
 set SOURCES=src\windows_main.c src\engine.c src\move_gen.c src\board.c src\search.c src\eval.c
 set INCLUDE=%INCLUDE% /Isrc
-set OUTPUT=bin\squid-a1.exe
+set OUTPUT=bin\squid-0.1.0.exe
 
 REM release build
 if "%~1"=="-r" (

@@ -1,3 +1,5 @@
 /.vs
 *.sqlite
 *.log
+bin/Logfile001.log
+*.exe
