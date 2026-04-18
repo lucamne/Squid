@@ -13,9 +13,9 @@
 
 #include <assert.h>
 
+#define ENGINE_NAME "squid-0.1.0"
 #define ASSERT assert
 #define STARTING_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-#define THREEFOLD_BUG_FEN "1R6/4kp2/2p1r1p1/2b1B2p/5Pn1/P4K2/2P4P/3R4 w - - 6 29"
 #define ULL unsigned long long
 
 ///////////////////////////////////////////////////////////////////////////////
