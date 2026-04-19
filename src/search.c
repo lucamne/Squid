@@ -109,7 +109,7 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	for (int i = 0; i < n_moves; i++) {
 		// stop once captures are all examined
 		// assume MVV-LVA ordering
-		if (ml[i].cap_id == EMPTY)
+		if (ml[i].cap_piece == EMPTY)
 			break;
 
 		make_move(ml + i);
@@ -182,12 +182,13 @@ Search_Result ab_search(AB_Params params) {
 
 	// setup priority move
 	// maintain captures at front of move list
+	// assume MVV_LVA
 	if (prio->count > 0 && n_moves > 0) {
 		int prio_pos = -1;
 		int non_cap_pos = -1;
 		Move t = ml[0];
 		for (int i = 0; i < n_moves; i++) {
-			if (ml[i].cap_id == E_ID) {
+			if (ml[i].cap_piece == EMPTY) {
 				non_cap_pos = i;
 			}
 
@@ -275,9 +276,9 @@ Search_Result ab_search(AB_Params params) {
 
 	// no moves and king not attacked is stalemate
 	if (!n_moves) {
-		if (side_to_move == WHITE && !is_square_attacked(piece_addr[piece_ids[WK - 2][0]], BLACK)) {
+		if (side_to_move == WHITE && !is_square_attacked(wking_addr, BLACK)) {
 			best_score = 0;
-		} else if (side_to_move == BLACK && !is_square_attacked(piece_addr[piece_ids[BK - 2][0]], WHITE)) {
+		} else if (side_to_move == BLACK && !is_square_attacked(bking_addr, WHITE)) {
 			best_score = 0;
 		}
 	}

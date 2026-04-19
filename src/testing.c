@@ -21,29 +21,29 @@ static void addr_to_str(int addr, char* buffer) {
 // converts PIECE to ascii char
 static char piece_to_char(PIECE p) {
 	switch(p) {
-		case WP:
+		case WPAWN:
 			return 'P';
-		case WR:
+		case WROOK:
 			return 'R';
-		case WN:
+		case WKNIGHT:
 			return 'N';
-		case WB:
+		case WBISHOP:
 			return 'B';
-		case WQ:
+		case WQUEEN:
 			return 'Q';
-		case WK:
+		case WKING:
 			return 'K';
-		case BP:
+		case BPAWN:
 			return 'p';
-		case BR:
+		case BROOK:
 			return 'r';
-		case BN:
+		case BKNIGHT:
 			return 'n';
-		case BB:
+		case BBISHOP:
 			return 'b';
-		case BQ:
+		case BQUEEN:
 			return 'q';
-		case BK:
+		case BKING:
 			return 'k';
 		default:
 			return ' ';
@@ -56,7 +56,7 @@ static void print_board(void) {
 		printf("   ---------------------------------\n");
 		printf(" %i |", 8 - y);
 		for (int x = 0; x < 8; x++) {
-			printf(" %c |", piece_to_char(piece_type[board[(y + 2) * 10 + x + 1]]));
+			printf(" %c |", piece_to_char(board2[(y + 2) * 10 + x + 1]));
 		}
 		printf("\n");
 	}
