@@ -36,41 +36,18 @@ static void prng_init(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// load_position() Helpers
-
-// Register new piece 
-static void register_piece(PIECE p, int addr) {
-	ASSERT(p >= WP && p <= BK);
-	ASSERT(on_board(addr));
-	ASSERT(next_id < 64);
-
-	int id = next_id++;
-	board[addr] = id;
-	piece_addr[id] = addr;
-	piece_type[id] = p;
-	if (p <= OFF_BOARD)
-		piece_color[id] = NC;
-	else if (p >= WP && p <= WK)
-		piece_color[id] = WHITE;
-	else
-		piece_color[id] = BLACK;
-	add_id(id);
-
-	hash_piece(p, addr);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 /// Public Functions
 
 int load_position(char* fen) {
 	ASSERT(fen);
 
-	for (int i = 0; i < 12; i++) {
-		material_counts[i] = 0;
-	}
+	for (int i = 0; i < 12; i++)
+		bitboards[i] = 0u;
+
+	for (int i = 0; i < 16; i++)
+		_material_counts[i] = 0;
+
 	// first two ids already occupied by empty and offboard
-	next_id = 2;
 	game_hash = 0ull;
 
 	int pos = 0;
@@ -78,43 +55,43 @@ int load_position(char* fen) {
 	int y = 0;
 	// parse pieces
 	while (1) {
-		PIECE p = EMPTY;
+		_PIECE p = _EMPTY;
 		switch (fen[pos]) {
 			case 'P':
-				p = WP;
+				p = WPAWN;
 				break;
 			case 'N':
-				p = WN;
+				p = WKNIGHT;
 				break;
 			case 'B':
-				p = WB;
+				p = WBISHOP;
 				break;
 			case 'R':
-				p = WR;
+				p = WROOK;
 				break;
 			case 'Q':
-				p = WQ;
+				p = WQUEEN;
 				break;
 			case 'K':
-				p = WK;
+				p = WKING;
 				break;
 			case 'p':
-				p = BP;
+				p = BPAWN;
 				break;
 			case 'n':
-				p = BN;
+				p = BKNIGHT;
 				break;
 			case 'b':
-				p = BB;
+				p = BBISHOP;
 				break;
 			case 'r':
-				p = BR;
+				p = BROOK;
 				break;
 			case 'q':
-				p = BQ;
+				p = BQUEEN;
 				break;
 			case 'k':
-				p = BK;
+				p = BKING;
 				break;
 			case '/':
 				if (x != 8) return 1;
@@ -123,18 +100,29 @@ int load_position(char* fen) {
 				break;
 			default:
 				// handle numbers for blank squares
-				p = EMPTY;
+				p = _EMPTY;
 				int num_empty_sq = fen[pos] - '0';
 				for (int i = 0; i < num_empty_sq; i++) {
-					board[10 * (y + 2) + x + 1] = 0;
+					board2[10 * (y + 2) + x + 1] = 0;
 					x++;
 				}
 		}
 
-		if (p != EMPTY) {
+		if (p != _EMPTY) {
 			int addr = 10 * (y + 2) + x + 1;
 			if (!on_board(addr)) return 1;
-			register_piece(p, addr);
+
+			board2[addr] = p;
+			++_material_counts[p];
+			hash_piece(p, addr);
+
+			if (p == WKING)
+				wking_addr = addr;
+			else if (p == BKING)
+				bking_addr = addr;
+			else
+				bitboards[p] |= (1u << (8 * y + x));
+
 			x++;
 		}
 		pos++;
@@ -150,8 +138,8 @@ int load_position(char* fen) {
 	pos++;
 	if (fen[pos] == ' ') return 1;
 
-	if (fen[pos] == 'w') side_to_move = WHITE;
-	else side_to_move = BLACK;
+	if (fen[pos] == 'w') side_to_move = _WHITE;
+	else side_to_move = _BLACK;
 	pos++;
 	if (fen[pos] != ' ') return 1;
 
@@ -213,6 +201,9 @@ int load_position(char* fen) {
 	history[0] = game_hash;
 	history_cnt = 1;
 
+	ASSERT(on_board(wking_addr));
+	ASSERT(on_board(bking_addr));
+
 	return 0;
 }
 
@@ -221,19 +212,21 @@ void init(void) {
 	// init offboard
 	for (int i = 0; i < 120; i++) {
 		if (i < 21 || i > 98 || i % 10 == 0 || i % 10 == 9) {
-			board[i] = OB_ID;
+			board2[i] = _OFF_BOARD;
 		}
 	}
-	// first two ids are always Empty and Offboard
-	piece_color[E_ID] = piece_color[OB_ID] = NC;
-	piece_type[E_ID] = EMPTY;
-	piece_type[OB_ID] = OFF_BOARD;
-	piece_addr[E_ID] = piece_addr[OB_ID] = -1;
+
+	// init bitboards
+	for (int i = 0; i < 12; i++)
+		bitboards[i] = 0u;
 
 	prng_init();
 	for (int i = 0; i < NUM_ZOBRIST_KEYS; i++) {
 		zobrist_keys[i] = prng();
 	}
+
+	wking_addr = -1;
+	bking_addr = -1;
 
 	uci_cmd_received = 0;
 	uci_pos_loaded = 0;

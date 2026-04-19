@@ -109,7 +109,7 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	for (int i = 0; i < n_moves; i++) {
 		// stop once captures are all examined
 		// assume MVV-LVA ordering
-		if (ml[i].cap_id == EMPTY)
+		if (ml[i].cap_piece == _EMPTY)
 			break;
 
 		make_move(ml + i);
@@ -182,12 +182,13 @@ Search_Result ab_search(AB_Params params) {
 
 	// setup priority move
 	// maintain captures at front of move list
+	// assume MVV_LVA
 	if (prio->count > 0 && n_moves > 0) {
 		int prio_pos = -1;
 		int non_cap_pos = -1;
 		Move t = ml[0];
 		for (int i = 0; i < n_moves; i++) {
-			if (ml[i].cap_id == E_ID) {
+			if (ml[i].cap_piece == _EMPTY) {
 				non_cap_pos = i;
 			}
 
@@ -226,7 +227,7 @@ Search_Result ab_search(AB_Params params) {
 			mmove_to_str(ml[i].mv, info_buff + 14);
 
 			int p;
-			if (ml[i].mv.promo == EMPTY) p = 0;
+			if (ml[i].mv.promo == _EMPTY) p = 0;
 			else p = 1;
 			snprintf(info_buff + 19 + p, INFO_BUFF_SIZE, "currmovenumber %d\n", i + 1);
 			platform_send_uci_command(info_buff);
@@ -264,7 +265,7 @@ Search_Result ab_search(AB_Params params) {
 		}
 
 		if (score >= beta) {
-			if (side_to_move == WHITE)
+			if (side_to_move == _WHITE)
 				nt = LB;
 			else
 				nt = UB;
@@ -275,9 +276,9 @@ Search_Result ab_search(AB_Params params) {
 
 	// no moves and king not attacked is stalemate
 	if (!n_moves) {
-		if (side_to_move == WHITE && !is_square_attacked(piece_addr[piece_ids[WK - 2][0]], BLACK)) {
+		if (side_to_move == _WHITE && !is_square_attacked(wking_addr, _BLACK)) {
 			best_score = 0;
-		} else if (side_to_move == BLACK && !is_square_attacked(piece_addr[piece_ids[BK - 2][0]], WHITE)) {
+		} else if (side_to_move == _BLACK && !is_square_attacked(bking_addr, _WHITE)) {
 			best_score = 0;
 		}
 	}
@@ -344,7 +345,7 @@ void iterative_ab_search(ULL search_time) {
 	Search_Result prev_res = {0, 1};
 	Variation prev_pv;
 	prev_pv.count = 0;
-	prev_pv.line[0] = (MMove){-1, -1, EMPTY};
+	prev_pv.line[0] = (MMove){-1, -1, _EMPTY};
 
 	while(1) {
 		Variation curr_pv;

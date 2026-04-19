@@ -12,11 +12,12 @@
  */
 
 #include <assert.h>
+#include <stdint.h>
 
 #define ENGINE_NAME "squid-0.1.0"
 #define ASSERT assert
 #define STARTING_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-#define ULL unsigned long long
+#define ULL uint_fast64_t
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Types
@@ -43,34 +44,6 @@
 #define _COLOR unsigned int
 #define _WHITE 0u
 #define _BLACK 1u
-
-/*
-// piece types
-typedef enum {
-	EMPTY = 0,
-	OFF_BOARD,
-	WP,
-	WN,
-	WB,
-	WR,
-	WQ,
-	WK,
-	BP,
-	BN,
-	BB,
-	BR,
-	BQ,
-	BK
-} PIECE;
-*/
-
-/*
-typedef enum {
-	NC = 0,			// No color
-	WHITE,
-	BLACK
-} COLOR;
-*/
 
 // evaluation type of node
 typedef enum {
@@ -134,6 +107,15 @@ typedef struct {
  * Use macros to extract info. */
 unsigned int board2[120];
 
+ULL bitboards[10];		// bitboard for each piece except king where each bit is true
+				// if there is a piece on correspond square
+				// 0 = a8, 63 = h1
+				// rightmost bit is 0
+
+_PIECE _material_counts[16];	// count of each piece type
+				// use 16 indices so PIECE macros
+				// can be used directly to index array
+
 int wking_addr;
 int bking_addr;
 _COLOR side_to_move;		// 1 = black, 0 = white
@@ -147,38 +129,19 @@ unsigned char castle_rights;	// [0-15] all combinations of castling rights
 #define k_CASTLE 0b0100
 #define q_CASTLE 0b1000
 
-_PIECE _material_counts[16];	// count of each piece type
-				// use 16 indices so PIECE macros
-				// can be used directly to index array
-
-/*
-// piece attributes indexed by id
-// indices 0 and 1 are EMPTY and OFF_BOARD
-// all EMPTY and OFF_BOARD pieces share the same ids
-COLOR piece_color[66];		// color of piece indexed by id
-PIECE piece_type[66];		// type of piece indexed by id
-int piece_addr[66];		// address of piece indexed by id
-#define E_ID 0			// EMPTY ID
-#define OB_ID 1			// OFF_BOARD ID
-
-// ids of all playable pieces
-// dimension 1 = piece type; dimension 2 = ids
-// piece types index order {WP, WN, WB, WR, WQ, WK, BP, BN, BB, BR, BQ, BK}
-int piece_ids[12][64];
-*/
 
 /*
  * keys for generating position hash
- * 1 key for each 4 bit number at each square 
- * {EMPTY, UNUSED, OFF_BOARD, UNUSED, WP, BP, WN, BN, WB, BB, WR, 
+ * 1 key for each piece at each square 
+ * {WP, BP, WN, BN, WB, BB, WR, 
  * BR, WQ, BQ, WK, BK} x 120
- * 1 key for side to move is black (i = 1920)
- * 16 keys for all possible castling rights (i = 1920)
- * 1 key for each file of en passant square if any {8} (i = 1936) 
+ * 1 key for side to move is black (i = 1440)
+ * 16 keys for all possible castling rights (i = 1441)
+ * 1 key for each file of en passant square if any {8} (i = 1457) 
  *
  * Off board addresses are included in zobrist keys to avoid converting
  * from 120 based addresses to 64 based addresses.*/
-#define NUM_ZOBRIST_KEYS 1936
+#define NUM_ZOBRIST_KEYS 1465
 ULL zobrist_keys[NUM_ZOBRIST_KEYS];
 ULL game_hash;
 
@@ -271,6 +234,12 @@ void iterative_ab_search(ULL search_time);
 ///////////////////////////////////////////////////////////////////////////////
 /// Engine Utilities
 
+// Return 1 if piece p is color c
+// Return 0 if piece is EMPTY/OFFBOARD
+static int check_color(_PIECE p, _COLOR c) {
+	return p >= WPAWN && (CMASK & p) == c;
+}
+
 // return 1 iff addr is on playable board
 static int on_board(int addr) {
 	return addr > 20 && addr < 99 && addr % 10 != 0 && addr %10 != 9;
@@ -291,21 +260,21 @@ static int addr_to_file(int addr) {
 
 // add or remove PIECE p at 120 based addr to hash
 static void hash_piece(_PIECE p, int addr) {
-	ASSERT(_EMPTY >= 0 && p < BKING );
+	ASSERT(p >= WPAWN && p <= BKING );
 	ASSERT(on_board(addr));
-	game_hash ^= zobrist_keys[120 * p + addr];
+	game_hash ^= zobrist_keys[120 * (p - WPAWN) + addr];
 }
 
 static void hash_side_to_move(void) {
-	game_hash ^= zobrist_keys[1920];
+	game_hash ^= zobrist_keys[1440];
 }
 
 static void hash_castle(void) {
-	game_hash ^= zobrist_keys[(int)(1921u + (unsigned int)castle_rights)];
+	game_hash ^= zobrist_keys[(int)(1441u + (unsigned int)castle_rights)];
 }
 
 static void hash_ep(void) {
-	game_hash ^= zobrist_keys[1936 + (ep_addr % 10  - 1)];
+	game_hash ^= zobrist_keys[1457 + (ep_addr % 10  - 1)];
 }
 
 #endif

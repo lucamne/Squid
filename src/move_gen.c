@@ -263,8 +263,8 @@ int is_square_attacked(int addr, _COLOR c) {
 int init_move(Move *move, int sa, int ta) {
 	ASSERT(move);
 	ASSERT(on_board(sa) && on_board(ta));
-	ASSERT((CMASK & board2[sa]) == side_to_move);
-	ASSERT((CMASK & board2[ta]) != side_to_move);
+	ASSERT(check_color(board2[sa], side_to_move));
+	ASSERT(!check_color(board2[ta], side_to_move));
 
 	move->cap_piece = board2[ta];
 	int cap_addr = ta;
@@ -330,7 +330,7 @@ static int gen_promos(Move *ml, int sa, int ta) {
 	ASSERT(board2[sa] != _EMPTY && board2[sa] != _OFF_BOARD);
 
 	int mi = 0;
-	if ((CMASK & board2[sa]) == _WHITE) {
+	if (check_color(board2[sa], _WHITE)) {
 		if (!init_move(ml + mi, sa, ta))
 			return 0;
 		mi++;
@@ -362,7 +362,7 @@ static int gen_promos(Move *ml, int sa, int ta) {
 static int gen_bp_moves(Move *ml, int a) {
 	ASSERT(ml);
 	ASSERT(side_to_move == _BLACK);
-	ASSERT(side_to_move == (CMASK & board2[a]));
+	ASSERT(check_color(board2[a], side_to_move));
 	ASSERT(addr_to_rank(a) <= 7);
 	ASSERT(on_board(a + 10));
 
@@ -380,7 +380,7 @@ static int gen_bp_moves(Move *ml, int a) {
 	}
 	// captures
 	_PIECE tp = board2[a + 9];
-	if ((tp != _EMPTY && tp != _OFF_BOARD && (CMASK & tp) == _WHITE) || ep_addr == a + 9) {
+	if (check_color(tp, _WHITE) || ep_addr == a + 9) {
 		if (addr_to_rank(a) == 2) {
 			mi += gen_promos(ml + mi, a, a + 9);
 		} else {
@@ -388,7 +388,7 @@ static int gen_bp_moves(Move *ml, int a) {
 		}
 	}
 	tp = board2[a + 11];
-	if ((tp != _EMPTY && tp != _OFF_BOARD && (CMASK & tp) == _WHITE) || ep_addr == a + 11) {
+	if (check_color(tp, _WHITE) || ep_addr == a + 11) {
 		if (addr_to_rank(a) == 2) {
 			mi += gen_promos(ml + mi, a, a + 11);
 		} else {
@@ -403,7 +403,7 @@ static int gen_bp_moves(Move *ml, int a) {
 static int gen_wp_moves(Move *ml, int a) {
 	ASSERT(ml);
 	ASSERT(side_to_move == _WHITE);
-	ASSERT(side_to_move == (CMASK & board2[a]));
+	ASSERT(check_color(board2[a], side_to_move));
 	ASSERT(addr_to_rank(a) <= 7);
 	ASSERT(on_board(a - 10));
 
@@ -422,7 +422,7 @@ static int gen_wp_moves(Move *ml, int a) {
 	}
 	// captures
 	_PIECE tp = board2[a - 9];
-	if ((tp != _EMPTY && tp != _OFF_BOARD && (CMASK & tp) == _BLACK) || ep_addr == a - 9) {
+	if (check_color(tp, _BLACK) || ep_addr == a - 9) {
 		if (addr_to_rank(a) == 7) {
 			mi += gen_promos(ml + mi, a, a - 9);
 		} else {
@@ -430,7 +430,7 @@ static int gen_wp_moves(Move *ml, int a) {
 		}
 	}
 	tp = board2[a - 11];
-	if ((tp != _EMPTY && tp != _OFF_BOARD && (CMASK & tp) == _BLACK) || ep_addr == a - 11) {
+	if (check_color(tp, _BLACK) || ep_addr == a - 11) {
 		if (addr_to_rank(a) == 7) {
 			mi += gen_promos(ml + mi, a, a - 11);
 		} else {
@@ -447,7 +447,7 @@ static int gen_wp_moves(Move *ml, int a) {
 // Target is valid if it is empty or not color c
 static int is_valid_target(int ta, _COLOR c) {
 	_PIECE p = board2[ta];
-	return (p != _OFF_BOARD) && ((CMASK & p) != c || p == _EMPTY);
+	return (p != _OFF_BOARD) && (!check_color(p, c) || p == _EMPTY);
 }
 
 // generate pseudo legal moves for knight at address a
@@ -457,7 +457,7 @@ static int is_valid_target(int ta, _COLOR c) {
 static int gen_knight_moves(Move *ml, int a) {
 	ASSERT(ml);
 	ASSERT(side_to_move == _WHITE || side_to_move == _BLACK);
-	ASSERT(side_to_move == (CMASK & board2[a]));
+	ASSERT(check_color(board2[a], side_to_move));
 
 	int mi = 0;
 	_COLOR c = side_to_move;
@@ -488,7 +488,7 @@ static int gen_knight_moves(Move *ml, int a) {
 static int gen_king_moves(Move *ml, int a) {
 	ASSERT(ml);
 	ASSERT(side_to_move == _WHITE || side_to_move == _BLACK);
-	ASSERT(side_to_move == (CMASK & board2[a]));
+	ASSERT(check_color(board2[a], side_to_move));
 
 	int mi = 0;
 	_COLOR c = side_to_move;
@@ -562,7 +562,7 @@ static int gen_king_moves(Move *ml, int a) {
 // Assume move_list is initialized and has enough space
 // Aassume a bishop, rook, or queen is located at addr
 static int gen_slide_move(Move *ml, int a, DIRECTION d) {
-	ASSERT(side_to_move == (CMASK & board2[a]));
+	ASSERT(check_color(board2[a], side_to_move));
 	ASSERT(ml);
 	ASSERT(on_board(a));
 	ASSERT(		board2[a] == WQUEEN || 
@@ -572,10 +572,7 @@ static int gen_slide_move(Move *ml, int a, DIRECTION d) {
 			board2[a] == WROOK || 
 			board2[a] == BROOK);
 
-	_COLOR c;
-	if (side_to_move == _WHITE) c = _BLACK;
-	else c = _WHITE;
-
+	_COLOR c = side_to_move ^ 1;
 	int mi = 0;
 	int off = d;
 	while (1) {
@@ -585,7 +582,7 @@ static int gen_slide_move(Move *ml, int a, DIRECTION d) {
 		} else if (p == _EMPTY) {
 			mi += init_move(ml + mi, a, a + off);
 			off += d;
-		} else if ((CMASK & p) == c) {
+		} else if (check_color(p, c)) {
 			mi += init_move(ml + mi, a, a + off);
 			break;
 		} else {
@@ -654,7 +651,10 @@ int gen_moves(Move *ml) {
 	int mi = 0;
 
 	for (int addr = 21; addr <= 98; addr++) {
-		switch (board2[addr]) {
+		_PIECE p = board2[addr];
+		if (p < WPAWN || !check_color(p, side_to_move))
+			continue;
+		switch (p) {
 			case WPAWN:
 				mi += gen_wp_moves(ml + mi, addr);
 				break;
@@ -681,15 +681,11 @@ int gen_moves(Move *ml) {
 			case BKING:
 				mi += gen_king_moves(ml + mi, addr);
 				break;
-			case _EMPTY:
-			case _OFF_BOARD:
-				break;
 			default:
 				ASSERT(0);
 		}
 	}
 
-	/*
 	// MVV-LVA ordering
 	// NOTE moves already generated in least valuable aggressor order 
 	// TODO the above is no longer true
@@ -714,7 +710,7 @@ int gen_moves(Move *ml) {
 			ml[compare_i + 1] = temp_move;
 		}
 		compare_i = test_i++;
-	} */
+	}
 
 	return mi;
 }
@@ -779,10 +775,10 @@ void unmake_move(Move *move) {
 		--_material_counts[ept];
 		if (c == _WHITE) {
 			board2[e] = WPAWN;
-			_material_counts[WPAWN];
+			++_material_counts[WPAWN];
 		} else {
 			board2[e] = BPAWN;
-			_material_counts[BPAWN];
+			++_material_counts[BPAWN];
 		}
 	} 
 	// undo kingside castle
@@ -806,7 +802,7 @@ void unmake_move(Move *move) {
 		if (e == ep_addr) {
 			ASSERT(board2[s] == WPAWN || board2[s] == BPAWN);
 			ASSERT(cap_piece == WPAWN || cap_piece == BPAWN);
-			if ((CMASK & cap_piece) == _WHITE) cap_addr -= 10;
+			if (check_color(cap_piece, _WHITE)) cap_addr -= 10;
 			else cap_addr += 10;
 		}
 		board2[cap_addr] = cap_piece;
@@ -846,10 +842,10 @@ void make_move(Move *move) {
 	if (move->cap_piece != _EMPTY) {
 		ASSERT(		move->cap_piece >= WPAWN && 
 				move->cap_piece <= BKING &&
-				(CMASK & move->cap_piece) != side_to_move);
+				!check_color(move->cap_piece, side_to_move));
 
 		int cap_addr = e;
-		if (e == move->ep_addr) {
+		if (e == ep_addr) {
 			if (side_to_move == _WHITE) cap_addr += 10;
 			else cap_addr -= 10;
 			ASSERT((addr_to_rank(cap_addr) == 5 && side_to_move == _WHITE) || 
@@ -872,7 +868,7 @@ void make_move(Move *move) {
 		ASSERT(		side_to_move == _BLACK || 
 				(promo >= WKNIGHT && 
 				 promo <= WQUEEN && 
-				 (CMASK & promo) == _WHITE));
+				 check_color(promo, _WHITE)));
 		// black assertions
 		ASSERT(		side_to_move == _WHITE || 
 				(spt == BPAWN && 
@@ -881,7 +877,7 @@ void make_move(Move *move) {
 		ASSERT(		side_to_move == _WHITE || 
 				(promo >= BKNIGHT && 
 				 promo <= BQUEEN &&
-				 (CMASK & promo) == _BLACK));
+				 check_color(promo, _BLACK)));
 
 		move_piece(s, e);
 		// hash out piece because we are promoting
@@ -1001,7 +997,7 @@ void make_move(Move *move) {
 
 	// update side to move
 	hash_side_to_move();
-	side_to_move ^= side_to_move;
+	side_to_move ^= 1u;
 
 	// update history
 	history[history_cnt++] = game_hash;
