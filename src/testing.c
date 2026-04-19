@@ -19,7 +19,7 @@ static void addr_to_str(int addr, char* buffer) {
 */
 
 // converts PIECE to ascii char
-static char piece_to_char(_PIECE p) {
+static char piece_to_char(PIECE p) {
 	switch(p) {
 		case WPAWN:
 			return 'P';
@@ -65,7 +65,7 @@ static void print_board(void) {
 
 	// side to move
 	printf("To move: ");
-	if (side_to_move == _WHITE) printf("White\n");
+	if (side_to_move == WHITE) printf("White\n");
 	else printf("Black\n");
 
 	// castling rights

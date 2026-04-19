@@ -10,7 +10,7 @@
  */
 
 // Converts promo PIECE to ascii char
-static char promo_to_char(_PIECE p) {
+static char promo_to_char(PIECE p) {
 	switch(p) {
 		case BROOK:
 		case WROOK:

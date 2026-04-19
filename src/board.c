@@ -47,7 +47,7 @@ int load_position(char* fen) {
 		*/
 
 	for (int i = 0; i < 16; i++)
-		_material_counts[i] = 0;
+		material_counts[i] = 0;
 
 	// first two ids already occupied by empty and offboard
 	game_hash = 0ull;
@@ -57,7 +57,7 @@ int load_position(char* fen) {
 	int y = 0;
 	// parse pieces
 	while (1) {
-		_PIECE p = _EMPTY;
+		PIECE p = EMPTY;
 		switch (fen[pos]) {
 			case 'P':
 				p = WPAWN;
@@ -102,7 +102,7 @@ int load_position(char* fen) {
 				break;
 			default:
 				// handle numbers for blank squares
-				p = _EMPTY;
+				p = EMPTY;
 				int num_empty_sq = fen[pos] - '0';
 				for (int i = 0; i < num_empty_sq; i++) {
 					board2[10 * (y + 2) + x + 1] = 0;
@@ -110,12 +110,12 @@ int load_position(char* fen) {
 				}
 		}
 
-		if (p != _EMPTY) {
+		if (p != EMPTY) {
 			int addr = 10 * (y + 2) + x + 1;
 			if (!on_board(addr)) return 1;
 
 			board2[addr] = p;
-			++_material_counts[p];
+			++material_counts[p];
 			hash_piece(p, addr);
 
 			if (p == WKING)
@@ -138,8 +138,8 @@ int load_position(char* fen) {
 	pos++;
 	if (fen[pos] == ' ') return 1;
 
-	if (fen[pos] == 'w') side_to_move = _WHITE;
-	else side_to_move = _BLACK;
+	if (fen[pos] == 'w') side_to_move = WHITE;
+	else side_to_move = BLACK;
 	pos++;
 	if (fen[pos] != ' ') return 1;
 
@@ -212,7 +212,7 @@ void init(void) {
 	// init offboard
 	for (int i = 0; i < 120; i++) {
 		if (i < 21 || i > 98 || i % 10 == 0 || i % 10 == 9) {
-			board2[i] = _OFF_BOARD;
+			board2[i] = OFF_BOARD;
 		}
 	}
 

@@ -3,13 +3,16 @@
 
 #include "string_processing.h"
 
+////////////////////////////////////////////////////////////////////////////////
+/// Functions
+
 // Return 1 if given square addr is attacked by color c
 // Otherwise return 0
-int is_square_attacked(int addr, _COLOR c) {
+int is_square_attacked(int addr, COLOR c) {
 	ASSERT(on_board(addr));
-	ASSERT(c == _WHITE || c == _BLACK);
+	ASSERT(c == WHITE || c == BLACK);
 
-	if (c == _WHITE) {
+	if (c == WHITE) {
 		if (board2[addr + 9] == WPAWN || board2[addr + 11] == WPAWN)
 			return 1;
 		if (		board2[addr - 21] == WKNIGHT || 
@@ -32,7 +35,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			return 1;
 
 		// sliding checks
-		_PIECE p;
+		PIECE p;
 		int dir = -10;
 		int c_addr = addr + dir;
 		// up
@@ -40,7 +43,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -52,7 +55,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -64,7 +67,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -76,7 +79,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -88,7 +91,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -100,7 +103,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -112,7 +115,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -124,7 +127,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == WQUEEN || p == WBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -152,7 +155,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			return 1;
 
 		// sliding checks
-		_PIECE p;
+		PIECE p;
 		int dir = -10;
 		int c_addr = addr + dir;
 		// up
@@ -160,7 +163,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -172,7 +175,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -184,7 +187,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -196,7 +199,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BROOK)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -208,7 +211,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -220,7 +223,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -232,7 +235,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -244,7 +247,7 @@ int is_square_attacked(int addr, _COLOR c) {
 			p = board2[c_addr];
 			if (p == BQUEEN || p == BBISHOP)
 				return 1;
-			if (p == _EMPTY)
+			if (p == EMPTY)
 				c_addr += dir;
 			else
 				break;
@@ -258,7 +261,7 @@ int is_square_attacked(int addr, _COLOR c) {
 // Return 0 iff move is illegal and not initialzed
 //
 // Move memory is handled by caller.
-// Promotion is always set to _EMPTY and must be manually changed by
+// Promotion is always set to EMPTY and must be manually changed by
 // caller if necassary.
 int init_move(Move *move, int sa, int ta) {
 	ASSERT(move);
@@ -281,25 +284,26 @@ int init_move(Move *move, int sa, int ta) {
 			cap_addr = ta - 10;
 		}
 	}
+
 	// check for king in check through pseudo make move
-	board2[cap_addr] = _EMPTY;
-	_PIECE start_piece = board2[sa];
-	board2[sa] = _EMPTY;
+	board2[cap_addr] = EMPTY;
+	PIECE start_piece = board2[sa];
+	board2[sa] = EMPTY;
 	board2[ta] = start_piece;
 	int ka;
 	int illegal = 0;
 
-	if (side_to_move == _WHITE) {
+	if (side_to_move == WHITE) {
 		ka = wking_addr;
 		if (ka == sa) ka = ta;
-		if (is_square_attacked(ka, _BLACK)) illegal = 1;
+		if (is_square_attacked(ka, BLACK)) illegal = 1;
 	} else {
 		ka = bking_addr;
 		if (ka == sa) ka = ta;
-		if (is_square_attacked(ka, _WHITE)) illegal = 1;
+		if (is_square_attacked(ka, WHITE)) illegal = 1;
 	}
 
-	board2[ta] = _EMPTY;
+	board2[ta] = EMPTY;
 	board2[cap_addr] = move->cap_piece;
 	board2[sa] = start_piece;
 	if (illegal) return 0;
@@ -309,7 +313,7 @@ int init_move(Move *move, int sa, int ta) {
 	move->castle_rights = castle_rights;
 	move->ep_addr = ep_addr;
 	move->halfmoves = halfmoves;
-	move->mv.promo = _EMPTY;
+	move->mv.promo = EMPTY;
 	move->game_hash = game_hash;
 	return 1;
 }
@@ -327,10 +331,10 @@ int init_move(Move *move, int sa, int ta) {
 // accordingly. This function will ALWAYS generate 4 or 0 moves.
 static int gen_promos(Move *ml, int sa, int ta) {
 	ASSERT(ml);
-	ASSERT(board2[sa] != _EMPTY && board2[sa] != _OFF_BOARD);
+	ASSERT(board2[sa] != EMPTY && board2[sa] != OFF_BOARD);
 
 	int mi = 0;
-	if (check_color(board2[sa], _WHITE)) {
+	if (check_color(board2[sa], WHITE)) {
 		if (!init_move(ml + mi, sa, ta))
 			return 0;
 		mi++;
@@ -361,26 +365,26 @@ static int gen_promos(Move *ml, int sa, int ta) {
 // return number of moves generated
 static int gen_bp_moves(Move *ml, int a) {
 	ASSERT(ml);
-	ASSERT(side_to_move == _BLACK);
+	ASSERT(side_to_move == BLACK);
 	ASSERT(check_color(board2[a], side_to_move));
 	ASSERT(addr_to_rank(a) <= 7);
 	ASSERT(on_board(a + 10));
 
 	int mi = 0;
 	// advance
-	if (board2[a + 10] == _EMPTY) {
+	if (board2[a + 10] == EMPTY) {
 		if (addr_to_rank(a) == 2) {
 			mi += gen_promos(ml + mi, a, a + 10);
 		} else {
 			mi += init_move(ml + mi, a, a + 10);
-			if (addr_to_rank(a) == 7 && board2[a + 20] == _EMPTY) {
+			if (addr_to_rank(a) == 7 && board2[a + 20] == EMPTY) {
 				mi += init_move(ml + mi, a, a + 20);
 			}
 		}
 	}
 	// captures
-	_PIECE tp = board2[a + 9];
-	if (check_color(tp, _WHITE) || ep_addr == a + 9) {
+	PIECE tp = board2[a + 9];
+	if (check_color(tp, WHITE) || ep_addr == a + 9) {
 		if (addr_to_rank(a) == 2) {
 			mi += gen_promos(ml + mi, a, a + 9);
 		} else {
@@ -388,7 +392,7 @@ static int gen_bp_moves(Move *ml, int a) {
 		}
 	}
 	tp = board2[a + 11];
-	if (check_color(tp, _WHITE) || ep_addr == a + 11) {
+	if (check_color(tp, WHITE) || ep_addr == a + 11) {
 		if (addr_to_rank(a) == 2) {
 			mi += gen_promos(ml + mi, a, a + 11);
 		} else {
@@ -402,7 +406,7 @@ static int gen_bp_moves(Move *ml, int a) {
 // return number of moves generated
 static int gen_wp_moves(Move *ml, int a) {
 	ASSERT(ml);
-	ASSERT(side_to_move == _WHITE);
+	ASSERT(side_to_move == WHITE);
 	ASSERT(check_color(board2[a], side_to_move));
 	ASSERT(addr_to_rank(a) <= 7);
 	ASSERT(on_board(a - 10));
@@ -410,19 +414,19 @@ static int gen_wp_moves(Move *ml, int a) {
 	int mi = 0;
 
 	// advance
-	if (board2[a - 10] == _EMPTY) {
+	if (board2[a - 10] == EMPTY) {
 		if (addr_to_rank(a) == 7) {
 			mi += gen_promos(ml + mi, a, a - 10);
 		} else {
 			mi += init_move(ml + mi, a, a - 10);
-			if (addr_to_rank(a) == 2 && board2[a - 20] == _EMPTY) {
+			if (addr_to_rank(a) == 2 && board2[a - 20] == EMPTY) {
 				mi += init_move(ml + mi, a, a - 20);
 			}
 		}
 	}
 	// captures
-	_PIECE tp = board2[a - 9];
-	if (check_color(tp, _BLACK) || ep_addr == a - 9) {
+	PIECE tp = board2[a - 9];
+	if (check_color(tp, BLACK) || ep_addr == a - 9) {
 		if (addr_to_rank(a) == 7) {
 			mi += gen_promos(ml + mi, a, a - 9);
 		} else {
@@ -430,7 +434,7 @@ static int gen_wp_moves(Move *ml, int a) {
 		}
 	}
 	tp = board2[a - 11];
-	if (check_color(tp, _BLACK) || ep_addr == a - 11) {
+	if (check_color(tp, BLACK) || ep_addr == a - 11) {
 		if (addr_to_rank(a) == 7) {
 			mi += gen_promos(ml + mi, a, a - 11);
 		} else {
@@ -445,9 +449,9 @@ static int gen_wp_moves(Move *ml, int a) {
 // DO NOT USE for pawns due to pawn capture rules
 //
 // Target is valid if it is empty or not color c
-static int is_valid_target(int ta, _COLOR c) {
-	_PIECE p = board2[ta];
-	return (p != _OFF_BOARD) && (!check_color(p, c) || p == _EMPTY);
+static int is_valid_target(int ta, COLOR c) {
+	PIECE p = board2[ta];
+	return (p != OFF_BOARD) && (!check_color(p, c) || p == EMPTY);
 }
 
 // generate pseudo legal moves for knight at address a
@@ -456,11 +460,11 @@ static int is_valid_target(int ta, _COLOR c) {
 // Caller is responsible for ml memory.
 static int gen_knight_moves(Move *ml, int a) {
 	ASSERT(ml);
-	ASSERT(side_to_move == _WHITE || side_to_move == _BLACK);
+	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
 	ASSERT(check_color(board2[a], side_to_move));
 
 	int mi = 0;
-	_COLOR c = side_to_move;
+	COLOR c = side_to_move;
 
 	if (is_valid_target(a - 21, c))
 		mi += init_move(ml + mi, a, a - 21);
@@ -487,11 +491,11 @@ static int gen_knight_moves(Move *ml, int a) {
 // Caller is responsible for ml memory.
 static int gen_king_moves(Move *ml, int a) {
 	ASSERT(ml);
-	ASSERT(side_to_move == _WHITE || side_to_move == _BLACK);
+	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
 	ASSERT(check_color(board2[a], side_to_move));
 
 	int mi = 0;
-	_COLOR c = side_to_move;
+	COLOR c = side_to_move;
 
 	if (is_valid_target(a - 11, c))
 		mi += init_move(ml + mi, a, a - 11);
@@ -510,42 +514,42 @@ static int gen_king_moves(Move *ml, int a) {
 	if (is_valid_target(a + 11, c))
 		mi += init_move(ml + mi, a, a + 11);
 
-	if (c == _WHITE) {
+	if (c == WHITE) {
 		if (		castle_rights & K_CASTLE && 
-				board2[a + 1] == _EMPTY && 
-				board2[a + 2] == _EMPTY && 
-				!is_square_attacked(a, _BLACK) && 
-				!is_square_attacked(a + 1, _BLACK)) {
+				board2[a + 1] == EMPTY && 
+				board2[a + 2] == EMPTY && 
+				!is_square_attacked(a, BLACK) && 
+				!is_square_attacked(a + 1, BLACK)) {
 			ASSERT(board2[98] == WROOK);
 			ASSERT(board2[95] == WKING);
 			mi += init_move(ml + mi, a, a + 2);
 		}
 		if (		castle_rights & Q_CASTLE && 
-				board2[a - 1] == _EMPTY && 
-				board2[a - 2] == _EMPTY && 
-				board2[a - 3] == _EMPTY &&
-				!is_square_attacked(a, _BLACK) && 
-				!is_square_attacked(a - 1, _BLACK)) {
+				board2[a - 1] == EMPTY && 
+				board2[a - 2] == EMPTY && 
+				board2[a - 3] == EMPTY &&
+				!is_square_attacked(a, BLACK) && 
+				!is_square_attacked(a - 1, BLACK)) {
 			ASSERT(board2[91] == WROOK);
 			ASSERT(board2[95] == WKING);
 			mi += init_move(ml + mi, a, a - 2);
 		}
 	} else {
 		if (		castle_rights & k_CASTLE && 
-				board2[a + 1] == _EMPTY && 
-				board2[a + 2] == _EMPTY && 
-				!is_square_attacked(a, _WHITE) && 
-				!is_square_attacked(a + 1, _WHITE)) {
+				board2[a + 1] == EMPTY && 
+				board2[a + 2] == EMPTY && 
+				!is_square_attacked(a, WHITE) && 
+				!is_square_attacked(a + 1, WHITE)) {
 			ASSERT(board2[28] == BROOK);
 			ASSERT(board2[25] == BKING);
 			mi += init_move(ml + mi, a, a + 2);
 		}
 		if (		castle_rights & q_CASTLE && 
-				board2[a - 1] == _EMPTY && 
-				board2[a - 2] == _EMPTY && 
-				board2[a - 3] == _EMPTY &&
-				!is_square_attacked(a, _WHITE) && 
-				!is_square_attacked(a - 1, _WHITE)) {
+				board2[a - 1] == EMPTY && 
+				board2[a - 2] == EMPTY && 
+				board2[a - 3] == EMPTY &&
+				!is_square_attacked(a, WHITE) && 
+				!is_square_attacked(a - 1, WHITE)) {
 			ASSERT(board2[21] == BROOK);
 			ASSERT(board2[25] == BKING);
 			mi += init_move(ml + mi, a, a - 2);
@@ -572,14 +576,14 @@ static int gen_slide_move(Move *ml, int a, DIRECTION d) {
 			board2[a] == WROOK || 
 			board2[a] == BROOK);
 
-	_COLOR c = side_to_move ^ 1;
+	COLOR c = side_to_move ^ 1;
 	int mi = 0;
 	int off = d;
 	while (1) {
-		_PIECE p = board2[a + off];
-		if (p == _OFF_BOARD) {
+		PIECE p = board2[a + off];
+		if (p == OFF_BOARD) {
 			break;
-		} else if (p == _EMPTY) {
+		} else if (p == EMPTY) {
 			mi += init_move(ml + mi, a, a + off);
 			off += d;
 		} else if (check_color(p, c)) {
@@ -649,10 +653,10 @@ static void mvv_lva_quicksort(Move *ml, int mi) {
 	int rear_swap = mi - 1;
 
 	while (pivot < rear_swap) {
-		_PIECE v1 = ml[pivot].cap_piece;
-		_PIECE v2 = ml[pivot + 1].cap_piece;
-		_PIECE a1 = board2[ml[pivot].mv.sa];
-		_PIECE a2 = board2[ml[pivot + 1].mv.sa];
+		PIECE v1 = ml[pivot].cap_piece;
+		PIECE v2 = ml[pivot + 1].cap_piece;
+		PIECE a1 = board2[ml[pivot].mv.sa];
+		PIECE a2 = board2[ml[pivot + 1].mv.sa];
 		// swap left if pivot + 1 is a greater capture
 		if (v2 > v1 || (v1 == v2 && a2 < a1)) {
 			Move t = ml[pivot];
@@ -689,11 +693,11 @@ static void mvv_lva_quicksort(Move *ml, int mi) {
 // adding and removing pieces changes the move gen order
 int gen_moves(Move *ml) {
 	ASSERT(ml);
-	ASSERT(side_to_move == _WHITE || side_to_move == _BLACK);
-	int mi = 0;
+	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
 
+	int mi = 0;
 	for (int addr = 21; addr <= 98; addr++) {
-		_PIECE p = board2[addr];
+		PIECE p = board2[addr];
 		if (p < WPAWN || !check_color(p, side_to_move))
 			continue;
 		switch (p) {
@@ -728,6 +732,16 @@ int gen_moves(Move *ml) {
 		}
 	}
 
+	// place a non capture at front of list to be pivot in quicksort
+	for (int i = 0; i < mi; i++) {
+		if (ml[i].cap_piece < WPAWN) {
+			Move t = ml[0];
+			ml[0] = ml[i];
+			ml[i] = t;
+			break;
+		}
+	}
+
 	mvv_lva_quicksort(ml, mi);
 	return mi;
 }
@@ -738,10 +752,10 @@ static void move_piece(int sa, int ta) {
 	ASSERT(on_board(ta));
 	ASSERT(on_board(sa));
 
-	_PIECE p = board2[sa];
+	PIECE p = board2[sa];
 	hash_piece(p, sa);
 	board2[ta] = p;
-	board2[sa] = _EMPTY;
+	board2[sa] = EMPTY;
 	hash_piece(p, ta);
 }
 
@@ -754,7 +768,7 @@ static void unmove_piece(int sa, int ta) {
 	ASSERT(on_board(ta));
 	ASSERT(on_board(sa));
 	board2[ta] = board2[sa];
-	board2[sa] = _EMPTY;
+	board2[sa] = EMPTY;
 }
 
 // Revert board state to previous move using Move used to generate
@@ -770,32 +784,32 @@ void unmake_move(Move *move) {
 
 	const int s = move->mv.sa;
 	const int e = move->mv.ta;
-	_PIECE ept = board2[e];
+	PIECE ept = board2[e];
 
 	if (ept == WKING) wking_addr = s;
 	else if (ept == BKING) bking_addr = s;
 
 	ASSERT(on_board(s));
 	ASSERT(on_board(e));
-	ASSERT(board2[s] == _EMPTY);
+	ASSERT(board2[s] == EMPTY);
 	ASSERT(ept >= WPAWN && ept <= BKING);
 
 	// ummove piece and handle special cases
 	//
 	// promotion
-	if (move->mv.promo != _EMPTY) {
-		ASSERT(move->mv.promo != _OFF_BOARD);
-		_COLOR c = CMASK & ept;
-		ASSERT(c == _WHITE || c == _BLACK);
+	if (move->mv.promo != EMPTY) {
+		ASSERT(move->mv.promo != OFF_BOARD);
+		COLOR c = CMASK & ept;
+		ASSERT(c == WHITE || c == BLACK);
 		ASSERT(ept > WPAWN || ept <= BQUEEN);
 
-		--_material_counts[ept];
-		if (c == _WHITE) {
+		--material_counts[ept];
+		if (c == WHITE) {
 			board2[e] = WPAWN;
-			++_material_counts[WPAWN];
+			++material_counts[WPAWN];
 		} else {
 			board2[e] = BPAWN;
-			++_material_counts[BPAWN];
+			++material_counts[BPAWN];
 		}
 	} 
 	// undo kingside castle
@@ -810,26 +824,26 @@ void unmake_move(Move *move) {
 	unmove_piece(e, s);
 
 	// uncapture piece (or replace with NONE if no capture occurred)
-	_PIECE cap_piece = move->cap_piece;
-	if (cap_piece != _EMPTY){
-		ASSERT(cap_piece != _OFF_BOARD);
-		++_material_counts[cap_piece];
+	PIECE cap_piece = move->cap_piece;
+	if (cap_piece != EMPTY){
+		ASSERT(cap_piece != OFF_BOARD);
+		++material_counts[cap_piece];
 
 		int cap_addr = e;
 		if (e == ep_addr) {
 			ASSERT(board2[s] == WPAWN || board2[s] == BPAWN);
 			ASSERT(cap_piece == WPAWN || cap_piece == BPAWN);
-			if (check_color(cap_piece, _WHITE)) cap_addr -= 10;
+			if (check_color(cap_piece, WHITE)) cap_addr -= 10;
 			else cap_addr += 10;
 		}
 		board2[cap_addr] = cap_piece;
 	}
 
-	if (side_to_move == _WHITE) {
+	if (side_to_move == WHITE) {
 		moves--;
-		side_to_move = _BLACK;
+		side_to_move = BLACK;
 	} else {
-		side_to_move = _WHITE;
+		side_to_move = WHITE;
 	}
 
 	// undo history
@@ -846,7 +860,7 @@ void make_move(Move *move) {
 	// start and end squares
 	int s = move->mv.sa;
 	int e = move->mv.ta;
-	_PIECE spt = board2[s];
+	PIECE spt = board2[s];
 
 	ASSERT(on_board(s));
 	ASSERT(on_board(e));
@@ -856,59 +870,59 @@ void make_move(Move *move) {
 	else if (spt == BKING) bking_addr = e;
 
 	// capture piece
-	if (move->cap_piece != _EMPTY) {
+	if (move->cap_piece != EMPTY) {
 		ASSERT(		move->cap_piece >= WPAWN && 
 				move->cap_piece <= BKING &&
 				!check_color(move->cap_piece, side_to_move));
 
 		int cap_addr = e;
 		if (e == ep_addr) {
-			if (side_to_move == _WHITE) cap_addr += 10;
+			if (side_to_move == WHITE) cap_addr += 10;
 			else cap_addr -= 10;
-			ASSERT((addr_to_rank(cap_addr) == 5 && side_to_move == _WHITE) || 
-					(addr_to_rank(cap_addr) == 4 && side_to_move == _BLACK));
+			ASSERT((addr_to_rank(cap_addr) == 5 && side_to_move == WHITE) || 
+					(addr_to_rank(cap_addr) == 4 && side_to_move == BLACK));
 		}
 		hash_piece(move->cap_piece, cap_addr);
-		board2[cap_addr] = _EMPTY;
-		--_material_counts[move->cap_piece];
+		board2[cap_addr] = EMPTY;
+		--material_counts[move->cap_piece];
 	}
 	// move piece in mailbox and handle special cases
 	//
 	// promotion
-	_PIECE promo = move->mv.promo;
-	if (promo != _EMPTY) {
+	PIECE promo = move->mv.promo;
+	if (promo != EMPTY) {
 		// white assertions
-		ASSERT(		side_to_move == _BLACK || 
+		ASSERT(		side_to_move == BLACK || 
 				(spt == WPAWN && 
 				 addr_to_rank(s) == 7 && 
 				 addr_to_rank(e) == 8));
-		ASSERT(		side_to_move == _BLACK || 
+		ASSERT(		side_to_move == BLACK || 
 				(promo >= WKNIGHT && 
 				 promo <= WQUEEN && 
-				 check_color(promo, _WHITE)));
+				 check_color(promo, WHITE)));
 		// black assertions
-		ASSERT(		side_to_move == _WHITE || 
+		ASSERT(		side_to_move == WHITE || 
 				(spt == BPAWN && 
 				 addr_to_rank(s) == 2  && 
 				 addr_to_rank(e) == 1));
-		ASSERT(		side_to_move == _WHITE || 
+		ASSERT(		side_to_move == WHITE || 
 				(promo >= BKNIGHT && 
 				 promo <= BQUEEN &&
-				 check_color(promo, _BLACK)));
+				 check_color(promo, BLACK)));
 
 		move_piece(s, e);
 		// hash out piece because we are promoting
 		hash_piece(spt, e);
-		--_material_counts[spt];
+		--material_counts[spt];
 
 		board2[e] = promo;
-		++_material_counts[promo];
+		++material_counts[promo];
 		hash_piece(promo, e);
 	} 
 	// white kingside castle
 	else if (spt == WKING && e == s + 2) {
 		ASSERT(castle_rights & K_CASTLE);
-		ASSERT(board2[s + 1] == _EMPTY && board2[s + 2] == _EMPTY);
+		ASSERT(board2[s + 1] == EMPTY && board2[s + 2] == EMPTY);
 		ASSERT(s == 95);
 		ASSERT(board2[98] == WROOK);
 
@@ -923,9 +937,9 @@ void make_move(Move *move) {
 	// white queenside castle
 	else if (spt == WKING && e == s - 2) {
 		ASSERT(castle_rights & Q_CASTLE);
-		ASSERT(board2[s - 1] == _EMPTY && 
-				board2[s - 2] == _EMPTY && 
-				board2[s - 3] == _EMPTY);
+		ASSERT(board2[s - 1] == EMPTY && 
+				board2[s - 2] == EMPTY && 
+				board2[s - 3] == EMPTY);
 		ASSERT(s == 95);
 		ASSERT(board2[91] == WROOK);
 
@@ -940,7 +954,7 @@ void make_move(Move *move) {
 	// black kingside castle
 	else if (spt == BKING && e == s + 2) {
 		ASSERT(castle_rights & k_CASTLE);
-		ASSERT(board2[s + 1] == _EMPTY && board2[s + 2] == _EMPTY);
+		ASSERT(board2[s + 1] == EMPTY && board2[s + 2] == EMPTY);
 		ASSERT(s == 25);
 		ASSERT(board2[28] == BROOK);
 
@@ -955,7 +969,7 @@ void make_move(Move *move) {
 	// black queenside castle
 	else if (spt == BKING && e == s - 2) {
 		ASSERT(castle_rights & q_CASTLE);
-		ASSERT(board2[s - 1] == _EMPTY && board2[s - 2] == _EMPTY && board2[s - 3] == _EMPTY);
+		ASSERT(board2[s - 1] == EMPTY && board2[s - 2] == EMPTY && board2[s - 3] == EMPTY);
 		ASSERT(s == 25);
 		ASSERT(board2[21] == BROOK);
 
@@ -971,12 +985,12 @@ void make_move(Move *move) {
 	else {
 		move_piece(s, e);
 	}
-	ASSERT(board2[s] == _EMPTY);
+	ASSERT(board2[s] == EMPTY);
 
 	// increment fullmove and halfmove if applicable
-	if (side_to_move == _BLACK) moves++;
-	ASSERT(move->cap_piece != _OFF_BOARD);
-	if (move->cap_piece != _EMPTY || spt == WPAWN || spt == BPAWN)
+	if (side_to_move == BLACK) moves++;
+	ASSERT(move->cap_piece != OFF_BOARD);
+	if (move->cap_piece != EMPTY || spt == WPAWN || spt == BPAWN)
 		halfmoves = 0;
 	else
 		halfmoves++;
@@ -1040,8 +1054,8 @@ int make_manual_move(const char* mv, int len) {
 
 	int sa = str_to_addr(mv);
 	int ta = str_to_addr(mv + 2);
-	_PIECE wp = _EMPTY;
-	_PIECE bp = _EMPTY;
+	PIECE wp = EMPTY;
+	PIECE bp = EMPTY;
 	if (len == 5) {
 		switch (mv[4]) {
 			case 'q':

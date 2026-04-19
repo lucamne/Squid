@@ -141,9 +141,9 @@ static void uci_go(const char* cmd) {
 		*ms = 0ULL;
 	} else if (movetime > 0) {
 		*ms = movetime;
-	} else if (side_to_move == _WHITE && wtime > 0) {
+	} else if (side_to_move == WHITE && wtime > 0) {
 		*ms = wtime / 20;
-	} else if (side_to_move == _BLACK && btime > 0) {
+	} else if (side_to_move == BLACK && btime > 0) {
 		*ms = btime / 20;
 	}
 

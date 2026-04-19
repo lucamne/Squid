@@ -23,9 +23,9 @@
 /// Types
 
 // Piece Types
-#define _PIECE unsigned int
-#define _EMPTY 0b0000u
-#define _OFF_BOARD 0b0010u
+#define PIECE unsigned int
+#define EMPTY 0b0000u
+#define OFF_BOARD 0b0010u
 #define WPAWN 0b0100u
 #define BPAWN 0b0101u
 #define WKNIGHT 0b0110u
@@ -41,9 +41,9 @@
 #define CMASK 0b1u		// mask to extract color from piece
 
 // Colors
-#define _COLOR unsigned int
-#define _WHITE 0u
-#define _BLACK 1u
+#define COLOR unsigned int
+#define WHITE 0u
+#define BLACK 1u
 
 // evaluation type of node
 typedef enum {
@@ -78,7 +78,7 @@ typedef enum {
 typedef struct {
 	int sa;			// source address
 	int ta;			// target address
-	_PIECE promo;		// promotion piece
+	PIECE promo;		// promotion piece
 } MMove;
 
 // Info needed by the engine to execute a move
@@ -87,7 +87,7 @@ typedef struct {
 	unsigned char castle_rights;
 	ULL game_hash;
 	int ep_addr;
-	_PIECE cap_piece;	// captured piece
+	PIECE cap_piece;	// captured piece
 	int halfmoves;
 } Move;
 
@@ -107,13 +107,13 @@ typedef struct {
  * Use macros to extract info. */
 unsigned int board2[120];
 
-_PIECE _material_counts[16];	// count of each piece type
+PIECE material_counts[16];	// count of each piece type
 				// use 16 indices so PIECE macros
 				// can be used directly to index array
 
 int wking_addr;
 int bking_addr;
-_COLOR side_to_move;		// 1 = black, 0 = white
+COLOR side_to_move;		// 1 = black, 0 = white
 int halfmoves;			// halfmoves since last capture or pawn advance
 int moves;			// fullmove counter
 int ep_addr;			// en passant address
@@ -161,7 +161,7 @@ int uci_halt_requested;			// search halt is requested
 ULL perft(int d);
 // Return total nodes found to ply 'd' in current position
 
-int is_square_attacked(int addr, _COLOR c);
+int is_square_attacked(int addr, COLOR c);
 // Return 1 if given square addr is attacked by color c
 // return 0 if not
 
@@ -231,7 +231,7 @@ void iterative_ab_search(ULL search_time);
 
 // Return 1 if piece p is color c
 // Return 0 if piece is EMPTY/OFFBOARD
-static int check_color(_PIECE p, _COLOR c) {
+static int check_color(PIECE p, COLOR c) {
 	return p >= WPAWN && (CMASK & p) == c;
 }
 
@@ -254,7 +254,7 @@ static int addr_to_file(int addr) {
 }
 
 // add or remove PIECE p at 120 based addr to hash
-static void hash_piece(_PIECE p, int addr) {
+static void hash_piece(PIECE p, int addr) {
 	ASSERT(p >= WPAWN && p <= BKING );
 	ASSERT(on_board(addr));
 	game_hash ^= zobrist_keys[120 * (p - WPAWN) + addr];
