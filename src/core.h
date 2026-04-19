@@ -107,11 +107,6 @@ typedef struct {
  * Use macros to extract info. */
 unsigned int board2[120];
 
-ULL bitboards[10];		// bitboard for each piece except king where each bit is true
-				// if there is a piece on correspond square
-				// 0 = a8, 63 = h1
-				// rightmost bit is 0
-
 _PIECE _material_counts[16];	// count of each piece type
 				// use 16 indices so PIECE macros
 				// can be used directly to index array

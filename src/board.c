@@ -41,8 +41,10 @@ static void prng_init(void) {
 int load_position(char* fen) {
 	ASSERT(fen);
 
+	/*
 	for (int i = 0; i < 12; i++)
 		bitboards[i] = 0u;
+		*/
 
 	for (int i = 0; i < 16; i++)
 		_material_counts[i] = 0;
@@ -120,8 +122,6 @@ int load_position(char* fen) {
 				wking_addr = addr;
 			else if (p == BKING)
 				bking_addr = addr;
-			else
-				bitboards[p] |= (1u << (8 * y + x));
 
 			x++;
 		}
@@ -217,8 +217,10 @@ void init(void) {
 	}
 
 	// init bitboards
+	/*
 	for (int i = 0; i < 12; i++)
 		bitboards[i] = 0u;
+		*/
 
 	prng_init();
 	for (int i = 0; i < NUM_ZOBRIST_KEYS; i++) {

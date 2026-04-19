@@ -638,6 +638,48 @@ static int gen_queen_moves(Move *ml, int a) {
 	return mi;
 }
 
+// Sort the first mi entries in Move list ml by most valuable victim
+// then by least valuable attacker
+static void mvv_lva_quicksort(Move *ml, int mi) {
+	ASSERT(ml);
+
+	if (mi <= 1) return;
+
+	int pivot = 0;
+	int rear_swap = mi - 1;
+
+	while (pivot < rear_swap) {
+		_PIECE v1 = ml[pivot].cap_piece;
+		_PIECE v2 = ml[pivot + 1].cap_piece;
+		_PIECE a1 = board2[ml[pivot].mv.sa];
+		_PIECE a2 = board2[ml[pivot + 1].mv.sa];
+		// swap left if pivot + 1 is a greater capture
+		if (v2 > v1 || (v1 == v2 && a2 < a1)) {
+			Move t = ml[pivot];
+			ml[pivot] = ml[pivot + 1];
+			ml[pivot + 1] = t;
+			pivot++;
+		// swap right if rear_swap != pivot + 1
+		} else if (pivot + 1 < rear_swap) {
+			Move t = ml[pivot + 1];
+			ml[pivot + 1] = ml[rear_swap];
+			ml[rear_swap] = t;
+			rear_swap--;
+		// all elements have been checked
+		} else {
+			break;
+		}
+	}
+
+	// sort front
+	mvv_lva_quicksort(ml, pivot);
+	// sort back if pivot is a capture piece
+	// don't care about order of non captures right now
+	if (ml[pivot].cap_piece >= WPAWN) 
+		mvv_lva_quicksort(ml + pivot + 1, mi - pivot - 1);
+
+}
+
 // generate legal moves in a position
 // caller is responsible for ml memory
 // assume ml is large enough
@@ -686,32 +728,7 @@ int gen_moves(Move *ml) {
 		}
 	}
 
-	// MVV-LVA ordering
-	// NOTE moves already generated in least valuable aggressor order 
-	// TODO the above is no longer true
-	int test_i = 1;
-	int compare_i = 0;
-	while (test_i < mi) {
-		PIECE curr_victim = piece_type[ml[test_i].cap_id];
-		PIECE compare_victim = piece_type[ml[compare_i].cap_id];
-
-		// find swap index
-		while (curr_victim > compare_victim) {
-			if (--compare_i < 0)
-				break;
-			compare_victim = piece_type[ml[compare_i].cap_id];
-		}
-
-		ASSERT(compare_i < test_i && compare_i >= -1);
-		// ordering is incorrect
-		if (compare_i < test_i - 1) {
-			Move temp_move = ml[test_i];
-			memmove(ml + compare_i + 2, ml + compare_i + 1, sizeof(Move) * (test_i - (compare_i + 1)));
-			ml[compare_i + 1] = temp_move;
-		}
-		compare_i = test_i++;
-	}
-
+	mvv_lva_quicksort(ml, mi);
 	return mi;
 }
 
