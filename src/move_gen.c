@@ -644,9 +644,35 @@ static int gen_queen_moves(Move *ml, int a) {
 
 // Sort the first mi entries in Move list ml by most valuable victim
 // then by least valuable attacker
-static void mvv_lva_quicksort(Move *ml, int mi) {
+static void mvv_lva(Move *ml, int mi) {
 	ASSERT(ml);
+	/*
+	int test_i = 1;
+	int compare_i = 0;
+	while (test_i < mi) {
+		PIECE curr_victim = ml[test_i].cap_piece;
+		PIECE curr_attacker = board2[ml[test_i].mv.sa];
+		PIECE compare_victim = ml[compare_i].cap_piece;
+		PIECE compare_attacker = board2[ml[compare_i].mv.sa];
 
+		// find swap index
+		while (curr_victim > compare_victim || (curr_victim == compare_victim && curr_attacker < compare_attacker)) {
+			if (--compare_i < 0)
+				break;
+			compare_victim = ml[compare_i].cap_piece;
+			compare_attacker = board2[ml[compare_i].mv.sa];
+		}
+
+		ASSERT(compare_i < test_i && compare_i >= -1);
+		// ordering is incorrect
+		if (compare_i < test_i - 1) {
+			Move temp_move = ml[test_i];
+			memmove(ml + compare_i + 2, ml + compare_i + 1, sizeof(Move) * (test_i - (compare_i + 1)));
+			ml[compare_i + 1] = temp_move;
+			}
+			compare_i = test_i++;
+			}
+			*/
 	if (mi <= 1) return;
 
 	int pivot = 0;
@@ -663,34 +689,30 @@ static void mvv_lva_quicksort(Move *ml, int mi) {
 			ml[pivot] = ml[pivot + 1];
 			ml[pivot + 1] = t;
 			pivot++;
-		// swap right if rear_swap != pivot + 1
+			// swap right if rear_swap != pivot + 1
 		} else if (pivot + 1 < rear_swap) {
 			Move t = ml[pivot + 1];
 			ml[pivot + 1] = ml[rear_swap];
 			ml[rear_swap] = t;
 			rear_swap--;
-		// all elements have been checked
+			// all elements have been checked
 		} else {
 			break;
 		}
 	}
 
 	// sort front
-	mvv_lva_quicksort(ml, pivot);
+	mvv_lva(ml, pivot);
 	// sort back if pivot is a capture piece
 	// don't care about order of non captures right now
 	if (ml[pivot].cap_piece >= WPAWN) 
-		mvv_lva_quicksort(ml + pivot + 1, mi - pivot - 1);
-
+		mvv_lva(ml + pivot + 1, mi - pivot - 1);
 }
 
-// generate legal moves in a position
-// caller is responsible for ml memory
-// assume ml is large enough
-// above assumptions are true for all move gen helper functions
-//
-// order of generated move is not always the same because
-// adding and removing pieces changes the move gen order
+// Generate legal moves in a position
+// Caller is responsible for ml memory
+// Assume ml is large enough
+// Above assumptions are true for all move gen helper functions
 int gen_moves(Move *ml) {
 	ASSERT(ml);
 	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
@@ -732,17 +754,7 @@ int gen_moves(Move *ml) {
 		}
 	}
 
-	// place a non capture at front of list to be pivot in quicksort
-	for (int i = 0; i < mi; i++) {
-		if (ml[i].cap_piece < WPAWN) {
-			Move t = ml[0];
-			ml[0] = ml[i];
-			ml[i] = t;
-			break;
-		}
-	}
-
-	mvv_lva_quicksort(ml, mi);
+	mvv_lva(ml, mi);
 	return mi;
 }
 

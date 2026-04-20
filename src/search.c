@@ -109,7 +109,7 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	for (int i = 0; i < n_moves; i++) {
 		// stop once captures are all examined
 		// assume MVV-LVA ordering
-		if (ml[i].cap_piece == EMPTY)
+		if (ml[i].cap_piece < WPAWN)
 			break;
 
 		make_move(ml + i);
