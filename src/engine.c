@@ -189,8 +189,9 @@ void engine_send_uci_command(const char* cmd) {
 			return;
 
 			// non standard testing command
-		} else if (!uci_search_active && next_token_eq(cmd, "perftsuite")) {
+		} else if (!uci_search_active && next_token_eq(cmd, "testsuite")) {
 
+			hash_check();
 			perft_test(5);
 			return;
 

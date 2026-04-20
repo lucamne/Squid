@@ -276,9 +276,9 @@ Search_Result ab_search(AB_Params params) {
 
 	// no moves and king not attacked is stalemate
 	if (!n_moves) {
-		if (side_to_move == WHITE && !is_square_attacked(wking_addr, BLACK)) {
+		if (side_to_move == WHITE && !is_square_attacked(piece_addr[WKING][0], BLACK)) {
 			best_score = 0;
-		} else if (side_to_move == BLACK && !is_square_attacked(bking_addr, WHITE)) {
+		} else if (side_to_move == BLACK && !is_square_attacked(piece_addr[BKING][0], WHITE)) {
 			best_score = 0;
 		}
 	}

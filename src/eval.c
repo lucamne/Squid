@@ -181,27 +181,27 @@ int* eg_piece_tables[6] = {
 static int wp_mobility(int a) {
 	int n_moves = 0;
 
-	ASSERT(board2[a] == WPAWN);
+	ASSERT(board[a] == WPAWN);
 	ASSERT(addr_to_rank(a) <= 7);
 	ASSERT(on_board(a - 10));
 
 	// advance
-	if (board2[a - 10] == EMPTY) {
+	if (board[a - 10] == EMPTY) {
 		n_moves++;
 		if (addr_to_rank(a) == 7)
 			n_moves += 3;
-		if (addr_to_rank(a) == 2 && board2[a - 20] == EMPTY) {
+		if (addr_to_rank(a) == 2 && board[a - 20] == EMPTY) {
 			n_moves++;
 		}
 	}
 	// captures
-	PIECE tp = board2[a - 9];
+	PIECE tp = board[a - 9];
 	if (check_color(tp, BLACK) || ep_addr == a - 9) {
 		n_moves++;
 		if (addr_to_rank(a) == 7)
 			n_moves += 3;
 	}
-	tp = board2[a - 11];
+	tp = board[a - 11];
 	if (check_color(tp, BLACK) || ep_addr == a - 11) {
 		n_moves++;
 		if (addr_to_rank(a) == 7)
@@ -214,27 +214,27 @@ static int wp_mobility(int a) {
 static int bp_mobility(int a) {
 	int n_moves = 0;
 
-	ASSERT(board2[a] == BPAWN);
+	ASSERT(board[a] == BPAWN);
 	ASSERT(addr_to_rank(a) <= 7);
 	ASSERT(on_board(a + 10));
 
 	// advance
-	if (board2[a + 10] == EMPTY) {
+	if (board[a + 10] == EMPTY) {
 		n_moves++;
 		if (addr_to_rank(a) == 2)
 			n_moves += 3;
-		if (addr_to_rank(a) == 7 && board2[a + 20] == EMPTY) {
+		if (addr_to_rank(a) == 7 && board[a + 20] == EMPTY) {
 			n_moves++;
 		}
 	}
 	// captures
-	PIECE tp = board2[a + 9];
+	PIECE tp = board[a + 9];
 	if (check_color(tp, WHITE) || ep_addr == a + 9) {
 		if (addr_to_rank(a) == 2)
 			n_moves += 3;
 		n_moves++;
 	}
-	tp = board2[a + 11];
+	tp = board[a + 11];
 	if (check_color(tp, WHITE) || ep_addr == a + 11) {
 		if (addr_to_rank(a) == 2)
 			n_moves += 3;
@@ -250,14 +250,14 @@ static int bp_mobility(int a) {
 // Target is valid if it is empty or not color c
 // TODO There is an identical function in move_gen.c
 static int is_valid_target(int ta, COLOR c) {
-	PIECE p = board2[ta];
+	PIECE p = board[ta];
 	return (p != OFF_BOARD) && (!check_color(p, c) || p == EMPTY);
 }
 
 // calculate number of pseudo legal knight moves for a knight at address a
 static int knight_mobility(int a) {
-	ASSERT(board2[a] == WKNIGHT || board2[a] == BKNIGHT);
-	COLOR c = CMASK & board2[a];
+	ASSERT(board[a] == WKNIGHT || board[a] == BKNIGHT);
+	COLOR c = CMASK & board[a];
 
 	int n_moves = 0;
 	if (is_valid_target(a - 21, c))
@@ -281,8 +281,8 @@ static int knight_mobility(int a) {
 
 // calculate number of pseudo legal moves for a king at address a
 static int king_mobility(int a) {
-	ASSERT(board2[a] == WKING || board2[a] == BKING);
-	COLOR c = board2[a] & CMASK;
+	ASSERT(board[a] == WKING || board[a] == BKING);
+	COLOR c = board[a] & CMASK;
 
 	int n_moves = 0;
 
@@ -305,34 +305,34 @@ static int king_mobility(int a) {
 
 	if (c == WHITE) {
 		if (		castle_rights & K_CASTLE && 
-				board2[a + 1] == EMPTY && 
-				board2[a + 2] == EMPTY) {
-			ASSERT(board2[98] == WROOK);
-			ASSERT(board2[95] == WKING);
+				board[a + 1] == EMPTY && 
+				board[a + 2] == EMPTY) {
+			ASSERT(board[98] == WROOK);
+			ASSERT(board[95] == WKING);
 			n_moves++;
 		}
 		if (		castle_rights & Q_CASTLE && 
-				board2[a - 1] == EMPTY && 
-				board2[a - 2] == EMPTY && 
-				board2[a - 3] == EMPTY) {
-			ASSERT(board2[91] == WROOK);
-			ASSERT(board2[95] == WKING);
+				board[a - 1] == EMPTY && 
+				board[a - 2] == EMPTY && 
+				board[a - 3] == EMPTY) {
+			ASSERT(board[91] == WROOK);
+			ASSERT(board[95] == WKING);
 			n_moves++;
 		}
 	} else {
 		if (		castle_rights & k_CASTLE && 
-				board2[a + 1] == EMPTY && 
-				board2[a + 2] == EMPTY) {
-			ASSERT(board2[28] == BROOK);
-			ASSERT(board2[25] == BKING);
+				board[a + 1] == EMPTY && 
+				board[a + 2] == EMPTY) {
+			ASSERT(board[28] == BROOK);
+			ASSERT(board[25] == BKING);
 			n_moves++;
 		}
 		if (		castle_rights & q_CASTLE && 
-				board2[a - 1] == EMPTY && 
-				board2[a - 2] == EMPTY && 
-				board2[a - 3] == EMPTY) {
-			ASSERT(board2[21] == BROOK);
-			ASSERT(board2[25] == BKING);
+				board[a - 1] == EMPTY && 
+				board[a - 2] == EMPTY && 
+				board[a - 3] == EMPTY) {
+			ASSERT(board[21] == BROOK);
+			ASSERT(board[25] == BKING);
 			n_moves++;
 		}
 	}
@@ -345,18 +345,18 @@ static int king_mobility(int a) {
 // Aassume a bishop, rook, or queen is located at addr
 static int slide_mobility(int a, DIRECTION d) {
 	ASSERT(on_board(a));
-	ASSERT(		board2[a] == WQUEEN || 
-			board2[a] == BQUEEN || 
-			board2[a] == WBISHOP || 
-			board2[a] == BBISHOP || 
-			board2[a] == WROOK || 
-			board2[a] == BROOK);
+	ASSERT(		board[a] == WQUEEN || 
+			board[a] == BQUEEN || 
+			board[a] == WBISHOP || 
+			board[a] == BBISHOP || 
+			board[a] == WROOK || 
+			board[a] == BROOK);
 
-	COLOR c = (CMASK & board2[a]) ^ 1u;
+	COLOR c = (CMASK & board[a]) ^ 1u;
 	int n_moves = 0;
 	int off = d;
 	while (1) {
-		PIECE p = board2[a + off];
+		PIECE p = board[a + off];
 		if (p == OFF_BOARD) {
 			break;
 		} else if (p == EMPTY) {
@@ -374,7 +374,7 @@ static int slide_mobility(int a, DIRECTION d) {
 
 // calculate number of pseudo legal moves for a bishop at address a
 static int bishop_mobility(int a) {
-	ASSERT(board2[a] == WBISHOP || board2[a] == BBISHOP);
+	ASSERT(board[a] == WBISHOP || board[a] == BBISHOP);
 	int n_moves = 0;
 	n_moves += slide_mobility(a, UR);
 	n_moves += slide_mobility(a, UL);
@@ -385,7 +385,7 @@ static int bishop_mobility(int a) {
 
 // calculate number of pseudo legal moves for a rook at address a
 static int rook_mobility(int a) {
-	ASSERT(board2[a] == WROOK || board2[a] == BROOK);
+	ASSERT(board[a] == WROOK || board[a] == BROOK);
 	int n_moves = 0;
 	n_moves += slide_mobility(a, U);
 	n_moves += slide_mobility(a, D);
@@ -396,7 +396,7 @@ static int rook_mobility(int a) {
 
 // calculate number of pseudo legal moves for a queen at address a
 static int queen_mobility(int a) {
-	ASSERT(board2[a] == WQUEEN || board2[a] == BQUEEN);
+	ASSERT(board[a] == WQUEEN || board[a] == BQUEEN);
 	int n_moves = 0;
 	n_moves += slide_mobility(a, UR);
 	n_moves += slide_mobility(a, UL);
@@ -416,7 +416,7 @@ static int mobility(void) {
 	int bm = 0;	// black mobility
 
 	for (int addr = 21; addr <= 98; addr++) {
-		PIECE p = board2[addr];
+		PIECE p = board[addr];
 		switch (p) {
 			case WPAWN:
 				wm += wp_mobility(addr);
@@ -538,7 +538,7 @@ static int piece_square_eval(void) {
 	int eg_score = 0;
 
 	for (int addr = 21; addr <= 98; addr++) {
-		PIECE p = board2[addr];
+		PIECE p = board[addr];
 		if (p <= OFF_BOARD)
 			continue;
 		game_phase += GAME_PHASE_INC[p - WPAWN];
