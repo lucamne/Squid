@@ -175,8 +175,6 @@ int* eg_piece_tables[6] = {
 	eg_king_table
 };
 
-
-
 // calculate the number of pseudo legal moves for a white pawn at address a
 static int wp_mobility(int a) {
 	int n_moves = 0;
@@ -464,45 +462,42 @@ static int mobility(void) {
 	return wm - bm;
 }
 
-/*
 // Return number of isolated, doubled, and blocked pawns of COLOR c
 // If pawns are doubled only one of them is counted as bad
 static int bad_pawns(COLOR c) {
-ASSERT(c == WHITE || c == BLACK);
-int *pid_arr;
-int np;
-if (c == WHITE) {
-pid_arr = piece_ids[WP - 2];
-np = material_counts[WP];
-} else {
-pid_arr = piece_ids[BPAWN - 2];
-np = material_counts[BPAWN];
-}
+	ASSERT(c == WHITE || c == BLACK);
+	int *pa_arr;
+	int np;
+	if (c == WHITE) {
+		pa_arr = piece_addr[WPAWN];
+		np = material_counts[WPAWN];
+	} else {
+		pa_arr = piece_addr[BPAWN];
+		np = material_counts[BPAWN];
+	}
 
-int bad_pawns = 0;
+	int bad_pawns = 0;
 
-char file_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-for (int i = 0; i < np; i++) {
-int id = pid_arr[i];
-int a = piece_addr[id];
-file_count[addr_to_file(a) - 1]++;
-}
+	char file_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	for (int i = 0; i < np; i++) {
+		int a = pa_arr[i];
+		file_count[addr_to_file(a) - 1]++;
+	}
 
-for (int i = 0; i < 8; i++) {
-int cnt = file_count[i];
-if (cnt) {
-bad_pawns += cnt - 1;
-if (i == 0 && !file_count[1])
-bad_pawns += cnt;
-else if (i == 7 && !file_count[6])
-bad_pawns += cnt;
-else if (!file_count[i - 1] && !file_count[i + 1])
-bad_pawns += cnt;
+	for (int i = 0; i < 8; i++) {
+		int cnt = file_count[i];
+		if (cnt) {
+			bad_pawns += cnt - 1;
+			if (i == 0 && !file_count[1])
+				bad_pawns += cnt;
+			else if (i == 7 && !file_count[6])
+				bad_pawns += cnt;
+			else if (!file_count[i - 1] && !file_count[i + 1])
+				bad_pawns += cnt;
+		}
+	}
+	return bad_pawns;
 }
-}
-return bad_pawns;
-}
-*/
 
 // Return 1 if position is most likely a draw
 // Return 0 if not
@@ -586,7 +581,7 @@ int evaluate(void) {
 	if (material_counts[BROOK] >= 2) score -= ROOK_PAIR;
 
 	score += MOB * mobility();
-	// score -= DI * (bad_pawns(WHITE) - bad_pawns(BLACK));
+	score -= DI * (bad_pawns(WHITE) - bad_pawns(BLACK));
 
 	if (side_to_move == BLACK) score *= -1;
 	return score;

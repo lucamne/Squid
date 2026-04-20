@@ -338,7 +338,7 @@ void iterative_ab_search(ULL search_time) {
 	char is_timed = 1;
 	if (search_time == 0) is_timed = 0;
 	int depth = 1;
-	const int asp_window = 35;
+	const int asp_window = 40;
 	int alpha = N_INF - depth - 1 - asp_window;
 	int beta = INF + depth + 1 + asp_window;
 
