@@ -41,11 +41,6 @@ static void prng_init(void) {
 int load_position(char* fen) {
 	ASSERT(fen);
 
-	/*
-	for (int i = 0; i < 12; i++)
-		bitboards[i] = 0u;
-		*/
-
 	for (int i = 0; i < 16; i++)
 		material_counts[i] = 0;
 
@@ -105,7 +100,7 @@ int load_position(char* fen) {
 				p = EMPTY;
 				int num_empty_sq = fen[pos] - '0';
 				for (int i = 0; i < num_empty_sq; i++) {
-					board2[10 * (y + 2) + x + 1] = 0;
+					board[10 * (y + 2) + x + 1] = 0;
 					x++;
 				}
 		}
@@ -114,14 +109,10 @@ int load_position(char* fen) {
 			int addr = 10 * (y + 2) + x + 1;
 			if (!on_board(addr)) return 1;
 
-			board2[addr] = p;
+			board[addr] = p;
 			++material_counts[p];
+			piece_addr[p][material_counts[p] - 1] = addr;
 			hash_piece(p, addr);
-
-			if (p == WKING)
-				wking_addr = addr;
-			else if (p == BKING)
-				bking_addr = addr;
 
 			x++;
 		}
@@ -201,9 +192,6 @@ int load_position(char* fen) {
 	history[0] = game_hash;
 	history_cnt = 1;
 
-	ASSERT(on_board(wking_addr));
-	ASSERT(on_board(bking_addr));
-
 	return 0;
 }
 
@@ -212,23 +200,14 @@ void init(void) {
 	// init offboard
 	for (int i = 0; i < 120; i++) {
 		if (i < 21 || i > 98 || i % 10 == 0 || i % 10 == 9) {
-			board2[i] = OFF_BOARD;
+			board[i] = OFF_BOARD;
 		}
 	}
-
-	// init bitboards
-	/*
-	for (int i = 0; i < 12; i++)
-		bitboards[i] = 0u;
-		*/
 
 	prng_init();
 	for (int i = 0; i < NUM_ZOBRIST_KEYS; i++) {
 		zobrist_keys[i] = prng();
 	}
-
-	wking_addr = -1;
-	bking_addr = -1;
 
 	uci_cmd_received = 0;
 	uci_pos_loaded = 0;

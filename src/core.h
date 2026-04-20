@@ -105,14 +105,18 @@ typedef struct {
  * Each address contains a bitfield of the where the rightmost bit is color
  * (0 = white, 1 = black) and the next 3 bits determine piece type. 
  * Use macros to extract info. */
-unsigned int board2[120];
+unsigned int board[120];
 
-PIECE material_counts[16];	// count of each piece type
+/* Addresses of each piece on the board
+ * The first four arrays are EMPTY, UNUSED, OFFBOARD, UNUSED
+ * so that macros can be used directly.
+ * piece_addr does not get initiliazed because access is 
+ * based on material counts.*/
+int piece_addr[16][10];
+int material_counts[16];	// count of each piece type
 				// use 16 indices so PIECE macros
 				// can be used directly to index array
 
-int wking_addr;
-int bking_addr;
 COLOR side_to_move;		// 1 = black, 0 = white
 int halfmoves;			// halfmoves since last capture or pawn advance
 int moves;			// fullmove counter
