@@ -244,7 +244,7 @@ void perft_test(int max_depth) {
 		if (n_nodes != positions[i].nodes_at_depth[depth - 1]) {
 			printf("PERFT FAILED!\nExpected nodes: %lli\nNodes found: %lli\n", 
 					positions[i].nodes_at_depth[depth - 1], n_nodes);
-			break;
+			return;
 		} else {
 			printf("Nodes found: %lli\n", n_nodes);
 			printf("Time elapsed: %llu.%llu\n", secs_elapsed, milli_elapsed);
@@ -255,7 +255,7 @@ void perft_test(int max_depth) {
 	// overflows are very possible here
 	printf("***********************\nPERFT PASSED!\n");
 	printf("\nTotal nodes found: %lli\n", total_nodes);
-	printf("Total time elapsed: %llu.%llu\n", total_secs, total_milli);
+	printf("Total time elapsed: %llu.%03llu\n", total_secs, total_milli);
 	printf("Nodes/sec: ~%lli\n", 1000 * (total_nodes / (1000 * total_secs + total_milli)));
 	printf("***********************\n\n");
 }
