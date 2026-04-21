@@ -144,11 +144,6 @@ Search_Result ab_search(AB_Params params) {
 	ASSERT(is_timed == 0 || ms_cutoff > 0);
 	Search_Result res = {0, 0};
 
-	if (is_repeat_position()) {
-		res.eval = 0;
-		pv->count = 0;
-		return res;
-	}
 	if (depth == 0) {
 		res.eval = quiesce(alpha, beta, is_timed, ms_cutoff);
 		pv->count = 0;
@@ -274,6 +269,9 @@ Search_Result ab_search(AB_Params params) {
 
 	}
 
+	if (is_repeat_position()) {
+		best_score = 0;
+	}
 	// no moves and king not attacked is stalemate
 	if (!n_moves) {
 		if (side_to_move == WHITE && !is_square_attacked(piece_addr[WKING][0], BLACK)) {
@@ -338,7 +336,7 @@ void iterative_ab_search(ULL search_time) {
 	char is_timed = 1;
 	if (search_time == 0) is_timed = 0;
 	int depth = 1;
-	const int asp_window = 40;
+	const int asp_window = 35;
 	int alpha = N_INF - depth - 1 - asp_window;
 	int beta = INF + depth + 1 + asp_window;
 
