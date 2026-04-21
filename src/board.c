@@ -96,6 +96,8 @@ int load_position(char* fen) {
 				y++;
 				break;
 			default:
+				if (fen[pos] < '1' || fen[pos] > '9')
+					return 1;
 				// handle numbers for blank squares
 				p = EMPTY;
 				int num_empty_sq = fen[pos] - '0';
