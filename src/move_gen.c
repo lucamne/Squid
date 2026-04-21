@@ -1128,8 +1128,7 @@ void make_move(Move* move) {
 		move_piece(s, e, 1);
 
 		hash_castle();
-		castle_rights ^= K_CASTLE;
-		castle_rights &= ~Q_CASTLE;
+		castle_rights &= ~(K_CASTLE | Q_CASTLE);
 		hash_castle();
 	}
 	// white queenside castle
@@ -1145,8 +1144,7 @@ void make_move(Move* move) {
 		move_piece(s, e, 1);
 
 		hash_castle();
-		castle_rights ^= Q_CASTLE;
-		castle_rights &= ~K_CASTLE;
+		castle_rights &= ~(K_CASTLE | Q_CASTLE);
 		hash_castle();
 	}
 	// black kingside castle
@@ -1160,8 +1158,7 @@ void make_move(Move* move) {
 		move_piece(s, e, 1);
 
 		hash_castle();
-		castle_rights ^= k_CASTLE;
-		castle_rights &= ~q_CASTLE;
+		castle_rights &= ~(k_CASTLE | q_CASTLE);
 		hash_castle();
 	}
 	// black queenside castle
@@ -1175,8 +1172,7 @@ void make_move(Move* move) {
 		move_piece(s, e, 1);
 
 		hash_castle();
-		castle_rights ^= q_CASTLE;
-		castle_rights &= ~k_CASTLE;
+		castle_rights &= ~(k_CASTLE | q_CASTLE);
 		hash_castle();
 	}
 	// standard move
