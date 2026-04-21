@@ -519,73 +519,70 @@ static int gen_king_moves(Move *ml) {
 	int mi = 0;
 	COLOR c = side_to_move;
 	PIECE p = WKING | c;
-	int mc = material_counts[p];
-	int* pa_arr = piece_addr[p];
+	int a = piece_addr[p][0];
 
-	for (int i = 0; i < mc; i++) {
-		int a = pa_arr[i];
-		ASSERT(check_color(board[a], side_to_move));
-		ASSERT(on_board(a));
-		ASSERT(board[a] == WKING || board[a] == BKING);
+	ASSERT(material_counts[p] == 1);
+	ASSERT(check_color(board[a], side_to_move));
+	ASSERT(on_board(a));
+	ASSERT(board[a] == WKING || board[a] == BKING);
 
 
-		if (is_valid_target(a - 11, c))
-			mi += init_move(ml + mi, a, a - 11);
-		if (is_valid_target(a - 10, c))
-			mi += init_move(ml + mi, a, a - 10);
-		if (is_valid_target(a - 9, c))
-			mi += init_move(ml + mi, a, a - 9);
-		if (is_valid_target(a - 1, c))
-			mi += init_move(ml + mi, a, a - 1);
-		if (is_valid_target(a + 1, c))
-			mi += init_move(ml + mi, a, a + 1);
-		if (is_valid_target(a + 9, c))
-			mi += init_move(ml + mi, a, a + 9);
-		if (is_valid_target(a + 10, c))
-			mi += init_move(ml + mi, a, a + 10);
-		if (is_valid_target(a + 11, c))
-			mi += init_move(ml + mi, a, a + 11);
+	if (is_valid_target(a - 11, c))
+		mi += init_move(ml + mi, a, a - 11);
+	if (is_valid_target(a - 10, c))
+		mi += init_move(ml + mi, a, a - 10);
+	if (is_valid_target(a - 9, c))
+		mi += init_move(ml + mi, a, a - 9);
+	if (is_valid_target(a - 1, c))
+		mi += init_move(ml + mi, a, a - 1);
+	if (is_valid_target(a + 1, c))
+		mi += init_move(ml + mi, a, a + 1);
+	if (is_valid_target(a + 9, c))
+		mi += init_move(ml + mi, a, a + 9);
+	if (is_valid_target(a + 10, c))
+		mi += init_move(ml + mi, a, a + 10);
+	if (is_valid_target(a + 11, c))
+		mi += init_move(ml + mi, a, a + 11);
 
-		if (c == WHITE) {
-			if (		castle_rights & K_CASTLE && 
-					board[a + 1] == EMPTY && 
-					board[a + 2] == EMPTY && 
-					!is_square_attacked(a, BLACK) && 
-					!is_square_attacked(a + 1, BLACK)) {
-				ASSERT(board[98] == WROOK);
-				ASSERT(board[95] == WKING);
-				mi += init_move(ml + mi, a, a + 2);
-			}
-			if (		castle_rights & Q_CASTLE && 
-					board[a - 1] == EMPTY && 
-					board[a - 2] == EMPTY && 
-					board[a - 3] == EMPTY &&
-					!is_square_attacked(a, BLACK) && 
-					!is_square_attacked(a - 1, BLACK)) {
-				ASSERT(board[91] == WROOK);
-				ASSERT(board[95] == WKING);
-				mi += init_move(ml + mi, a, a - 2);
-			}
-		} else {
-			if (		castle_rights & k_CASTLE && 
-					board[a + 1] == EMPTY && 
-					board[a + 2] == EMPTY && 
-					!is_square_attacked(a, WHITE) && 
-					!is_square_attacked(a + 1, WHITE)) {
-				ASSERT(board[28] == BROOK);
-				ASSERT(board[25] == BKING);
-				mi += init_move(ml + mi, a, a + 2);
-			}
-			if (		castle_rights & q_CASTLE && 
-					board[a - 1] == EMPTY && 
-					board[a - 2] == EMPTY && 
-					board[a - 3] == EMPTY &&
-					!is_square_attacked(a, WHITE) && 
-					!is_square_attacked(a - 1, WHITE)) {
-				ASSERT(board[21] == BROOK);
-				ASSERT(board[25] == BKING);
-				mi += init_move(ml + mi, a, a - 2);
-			}
+	if (c == WHITE) {
+		if (		castle_rights & K_CASTLE && 
+				board[a + 1] == EMPTY && 
+				board[a + 2] == EMPTY && 
+				!is_square_attacked(a, BLACK) && 
+				!is_square_attacked(a + 1, BLACK)) {
+			ASSERT(board[98] == WROOK);
+			ASSERT(board[95] == WKING);
+			mi += init_move(ml + mi, a, a + 2);
+		}
+		if (		castle_rights & Q_CASTLE && 
+				board[a - 1] == EMPTY && 
+				board[a - 2] == EMPTY && 
+				board[a - 3] == EMPTY &&
+				!is_square_attacked(a, BLACK) && 
+				!is_square_attacked(a - 1, BLACK)) {
+			ASSERT(board[91] == WROOK);
+			ASSERT(board[95] == WKING);
+			mi += init_move(ml + mi, a, a - 2);
+		}
+	} else {
+		if (		castle_rights & k_CASTLE && 
+				board[a + 1] == EMPTY && 
+				board[a + 2] == EMPTY && 
+				!is_square_attacked(a, WHITE) && 
+				!is_square_attacked(a + 1, WHITE)) {
+			ASSERT(board[28] == BROOK);
+			ASSERT(board[25] == BKING);
+			mi += init_move(ml + mi, a, a + 2);
+		}
+		if (		castle_rights & q_CASTLE && 
+				board[a - 1] == EMPTY && 
+				board[a - 2] == EMPTY && 
+				board[a - 3] == EMPTY &&
+				!is_square_attacked(a, WHITE) && 
+				!is_square_attacked(a - 1, WHITE)) {
+			ASSERT(board[21] == BROOK);
+			ASSERT(board[25] == BKING);
+			mi += init_move(ml + mi, a, a - 2);
 		}
 	}
 	return mi;
