@@ -14,7 +14,7 @@
 #include <assert.h>
 #include <stdint.h>
 
-#define ENGINE_NAME "squid-0.2.1"
+#define ENGINE_NAME "squid-0.3.0"
 #define ASSERT assert
 #define STARTING_FEN "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 #define ULL uint_fast64_t
