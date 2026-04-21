@@ -263,7 +263,7 @@ int is_square_attacked(int addr, COLOR c) {
 // Move memory is handled by caller.
 // Promotion is always set to EMPTY and must be manually changed by
 // caller if necassary.
-int init_move(Move *move, int sa, int ta) {
+int init_move(Move* move, int sa, int ta) {
 	ASSERT(move);
 	ASSERT(on_board(sa) && on_board(ta));
 	ASSERT(check_color(board[sa], side_to_move));
@@ -318,9 +318,12 @@ int init_move(Move *move, int sa, int ta) {
 	return 1;
 }
 
-
-
-
+// Return from a move generation helper to track number of moves
+// added to capture and non capture array
+typedef struct {
+	int cap_moves;
+	int non_cap_moves;
+} Moves_Added;
 
 // Generate all pawn promotion moves for pawn at address sa to address ta.
 // Return number of moves added
@@ -329,7 +332,7 @@ int init_move(Move *move, int sa, int ta) {
 //
 // NOTE: caller must account for added moves and adjust their move_list index
 // accordingly. This function will ALWAYS generate 4 or 0 moves.
-static int gen_promos(Move *ml, int sa, int ta) {
+static int gen_promos(Move* ml, int sa, int ta) {
 	ASSERT(ml);
 	ASSERT(board[sa] != EMPTY && board[sa] != OFF_BOARD);
 
@@ -363,11 +366,13 @@ static int gen_promos(Move *ml, int sa, int ta) {
 
 // generate pseudo legal black pawn moves
 // return number of moves generated
-static int gen_bp_moves(Move *ml) {
-	ASSERT(ml);
+static Moves_Added gen_bp_moves(Move* captures, Move* non_captures) {
+	ASSERT(captures);
+	ASSERT(non_captures);
 	ASSERT(side_to_move == BLACK);
 
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	int mc = material_counts[BPAWN];
 	int* pa_arr = piece_addr[BPAWN];
 
@@ -381,11 +386,11 @@ static int gen_bp_moves(Move *ml) {
 		// advance
 		if (board[a + 10] == EMPTY) {
 			if (addr_to_rank(a) == 2) {
-				mi += gen_promos(ml + mi, a, a + 10);
+				non_cap_moves += gen_promos(non_captures + non_cap_moves, a, a + 10);
 			} else {
-				mi += init_move(ml + mi, a, a + 10);
+				non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 10);
 				if (addr_to_rank(a) == 7 && board[a + 20] == EMPTY) {
-					mi += init_move(ml + mi, a, a + 20);
+					non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 20);
 				}
 			}
 		}
@@ -393,30 +398,32 @@ static int gen_bp_moves(Move *ml) {
 		PIECE tp = board[a + 9];
 		if (check_color(tp, WHITE) || ep_addr == a + 9) {
 			if (addr_to_rank(a) == 2) {
-				mi += gen_promos(ml + mi, a, a + 9);
+				cap_moves += gen_promos(captures + cap_moves, a, a + 9);
 			} else {
-				mi += init_move(ml + mi, a, a + 9);
+				cap_moves += init_move(captures + cap_moves, a, a + 9);
 			}
 		}
 		tp = board[a + 11];
 		if (check_color(tp, WHITE) || ep_addr == a + 11) {
 			if (addr_to_rank(a) == 2) {
-				mi += gen_promos(ml + mi, a, a + 11);
+				cap_moves += gen_promos(captures + cap_moves, a, a + 11);
 			} else {
-				mi += init_move(ml + mi, a, a + 11);
+				cap_moves += init_move(captures + cap_moves, a, a + 11);
 			}
 		}
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
 // generate pseudo legal white pawn moves 
 // return number of moves generated
-static int gen_wp_moves(Move *ml) {
-	ASSERT(ml);
+static Moves_Added gen_wp_moves(Move* captures, Move* non_captures) {
+	ASSERT(captures);
+	ASSERT(non_captures);
 	ASSERT(side_to_move == WHITE);
 
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	int mc = material_counts[WPAWN];
 	int* pa_arr = piece_addr[WPAWN];
 
@@ -429,11 +436,11 @@ static int gen_wp_moves(Move *ml) {
 		// advance
 		if (board[a - 10] == EMPTY) {
 			if (addr_to_rank(a) == 7) {
-				mi += gen_promos(ml + mi, a, a - 10);
+				non_cap_moves += gen_promos(non_captures + non_cap_moves, a, a - 10);
 			} else {
-				mi += init_move(ml + mi, a, a - 10);
+				non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 10);
 				if (addr_to_rank(a) == 2 && board[a - 20] == EMPTY) {
-					mi += init_move(ml + mi, a, a - 20);
+					non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 20);
 				}
 			}
 		}
@@ -441,42 +448,44 @@ static int gen_wp_moves(Move *ml) {
 		PIECE tp = board[a - 9];
 		if (check_color(tp, BLACK) || ep_addr == a - 9) {
 			if (addr_to_rank(a) == 7) {
-				mi += gen_promos(ml + mi, a, a - 9);
+				cap_moves += gen_promos(captures + cap_moves, a, a - 9);
 			} else {
-				mi += init_move(ml + mi, a, a - 9);
+				cap_moves += init_move(captures + cap_moves, a, a - 9);
 			}
 		}
 		tp = board[a - 11];
 		if (check_color(tp, BLACK) || ep_addr == a - 11) {
 			if (addr_to_rank(a) == 7) {
-				mi += gen_promos(ml + mi, a, a - 11);
+				cap_moves += gen_promos(captures + cap_moves, a, a - 11);
 			} else {
-				mi += init_move(ml + mi, a, a - 11);
+				cap_moves += init_move(captures + cap_moves, a, a - 11);
 			}
 		}
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
-// Return 1 if target address is a valid target for a piece of color c
-// Return 0 if not
+// Return 1 if target is empty, 2 if target is a capture, 0 if target
+// is invalid
 // DO NOT USE for pawns due to pawn capture rules
-//
-// Target is valid if it is empty or not color c
-static int is_valid_target(int ta, COLOR c) {
+static int target_type(int ta, COLOR c) {
 	PIECE p = board[ta];
-	return (p != OFF_BOARD) && (!check_color(p, c) || p == EMPTY);
+	if (p == EMPTY) return 1;
+	if (p != OFF_BOARD && !check_color(p,c)) return 2;
+	return 0;
 }
 
 // generate pseudo legal knight moves
 // return number of moves generated
 // Assume ml is large enough.
 // Caller is responsible for ml memory.
-static int gen_knight_moves(Move *ml) {
-	ASSERT(ml);
+static Moves_Added gen_knight_moves(Move* captures, Move* non_captures) {
+	ASSERT(captures);
+	ASSERT(non_captures);
 	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
 
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	COLOR c = side_to_move;
 	PIECE p = WKNIGHT | c;
 	int mc = material_counts[p];
@@ -488,35 +497,68 @@ static int gen_knight_moves(Move *ml) {
 		ASSERT(on_board(a));
 		ASSERT(board[a] == WKNIGHT || board[a] == BKNIGHT);
 
-		if (is_valid_target(a - 21, c))
-			mi += init_move(ml + mi, a, a - 21);
-		if (is_valid_target(a - 19, c))
-			mi += init_move(ml + mi, a, a - 19);
-		if (is_valid_target(a - 12, c))
-			mi += init_move(ml + mi, a, a - 12);
-		if (is_valid_target(a - 8, c))
-			mi += init_move(ml + mi, a, a - 8);
-		if (is_valid_target(a + 21, c))
-			mi += init_move(ml + mi, a, a + 21);
-		if (is_valid_target(a + 19, c))
-			mi += init_move(ml + mi, a, a + 19);
-		if (is_valid_target(a + 12, c))
-			mi += init_move(ml + mi, a, a + 12);
-		if (is_valid_target(a + 8, c))
-			mi += init_move(ml + mi, a, a + 8);
+		int o = target_type(a - 21, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 21);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a - 21);
+
+		o = target_type(a - 19, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 19);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a - 19);
+
+		o = target_type(a - 12, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 12);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a - 12);
+
+		o = target_type(a - 8, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 8);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a - 8);
+
+		o = target_type(a + 21, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 21);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a + 21);
+
+		o = target_type(a + 19, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 19);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a + 19);
+
+		o = target_type(a + 12, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 12);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a + 12);
+
+		o = target_type(a + 8, c);
+		if (o == 1)
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 8);
+		else if (o == 2)
+			cap_moves += init_move(captures + cap_moves, a, a + 8);
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
 // generate pseudo legal king moves
 // return number of moves generated
 // Assume ml is large enough.
 // Caller is responsible for ml memory.
-static int gen_king_moves(Move *ml) {
-	ASSERT(ml);
+static Moves_Added gen_king_moves(Move* captures, Move* non_captures) {
+	ASSERT(captures);
+	ASSERT(non_captures);
 	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
 
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	COLOR c = side_to_move;
 	PIECE p = WKING | c;
 	int a = piece_addr[p][0];
@@ -526,23 +568,53 @@ static int gen_king_moves(Move *ml) {
 	ASSERT(on_board(a));
 	ASSERT(board[a] == WKING || board[a] == BKING);
 
+	int o = target_type(a - 11, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 11);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a - 11);
 
-	if (is_valid_target(a - 11, c))
-		mi += init_move(ml + mi, a, a - 11);
-	if (is_valid_target(a - 10, c))
-		mi += init_move(ml + mi, a, a - 10);
-	if (is_valid_target(a - 9, c))
-		mi += init_move(ml + mi, a, a - 9);
-	if (is_valid_target(a - 1, c))
-		mi += init_move(ml + mi, a, a - 1);
-	if (is_valid_target(a + 1, c))
-		mi += init_move(ml + mi, a, a + 1);
-	if (is_valid_target(a + 9, c))
-		mi += init_move(ml + mi, a, a + 9);
-	if (is_valid_target(a + 10, c))
-		mi += init_move(ml + mi, a, a + 10);
-	if (is_valid_target(a + 11, c))
-		mi += init_move(ml + mi, a, a + 11);
+	o = target_type(a - 10, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 10);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a - 10);
+
+	o = target_type(a - 9, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 9);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a - 9);
+
+	o = target_type(a - 1, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 1);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a - 1);
+
+	o = target_type(a + 1, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 1);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a + 1);
+
+	o = target_type(a + 9, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 9);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a + 9);
+
+	o = target_type(a + 10, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 10);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a + 10);
+
+	o = target_type(a + 11, c);
+	if (o == 1)
+		non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 11);
+	else if (o == 2)
+		cap_moves += init_move(captures + cap_moves, a, a + 11);
 
 	if (c == WHITE) {
 		if (		castle_rights & K_CASTLE && 
@@ -552,7 +624,7 @@ static int gen_king_moves(Move *ml) {
 				!is_square_attacked(a + 1, BLACK)) {
 			ASSERT(board[98] == WROOK);
 			ASSERT(board[95] == WKING);
-			mi += init_move(ml + mi, a, a + 2);
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 2);
 		}
 		if (		castle_rights & Q_CASTLE && 
 				board[a - 1] == EMPTY && 
@@ -562,7 +634,7 @@ static int gen_king_moves(Move *ml) {
 				!is_square_attacked(a - 1, BLACK)) {
 			ASSERT(board[91] == WROOK);
 			ASSERT(board[95] == WKING);
-			mi += init_move(ml + mi, a, a - 2);
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 2);
 		}
 	} else {
 		if (		castle_rights & k_CASTLE && 
@@ -572,7 +644,7 @@ static int gen_king_moves(Move *ml) {
 				!is_square_attacked(a + 1, WHITE)) {
 			ASSERT(board[28] == BROOK);
 			ASSERT(board[25] == BKING);
-			mi += init_move(ml + mi, a, a + 2);
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a + 2);
 		}
 		if (		castle_rights & q_CASTLE && 
 				board[a - 1] == EMPTY && 
@@ -582,10 +654,10 @@ static int gen_king_moves(Move *ml) {
 				!is_square_attacked(a - 1, WHITE)) {
 			ASSERT(board[21] == BROOK);
 			ASSERT(board[25] == BKING);
-			mi += init_move(ml + mi, a, a - 2);
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a - 2);
 		}
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
 // Generate sliding moves for a piece located at a moving in DIRECTION d 
@@ -595,9 +667,10 @@ static int gen_king_moves(Move *ml) {
 //
 // Assume move_list is initialized and has enough space
 // Aassume a bishop, rook, or queen is located at addr
-static int gen_slide_move(Move *ml, int a, DIRECTION d) {
+static Moves_Added gen_slide_move(Move* captures, Move* non_captures, int a, DIRECTION d) {
 	ASSERT(check_color(board[a], side_to_move));
-	ASSERT(ml);
+	ASSERT(captures);
+	ASSERT(non_captures);
 	ASSERT(on_board(a));
 	ASSERT(		board[a] == WQUEEN || 
 			board[a] == BQUEEN || 
@@ -607,33 +680,36 @@ static int gen_slide_move(Move *ml, int a, DIRECTION d) {
 			board[a] == BROOK);
 
 	COLOR c = side_to_move ^ 1;
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	int off = d;
 	while (1) {
 		PIECE p = board[a + off];
 		if (p == OFF_BOARD) {
 			break;
 		} else if (p == EMPTY) {
-			mi += init_move(ml + mi, a, a + off);
+			non_cap_moves += init_move(non_captures + non_cap_moves, a, a + off);
 			off += d;
 		} else if (check_color(p, c)) {
-			mi += init_move(ml + mi, a, a + off);
+			cap_moves += init_move(captures + cap_moves, a, a + off);
 			break;
 		} else {
 			break;
 		}
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
 // generate pseudo legal bishop moves
 // return number of moves generated
 // Assume ml is large enough.
 // Caller is responsible for ml memory.
-static int gen_bishop_moves(Move *ml) {
-	ASSERT(ml);
+static Moves_Added gen_bishop_moves(Move* captures, Move* non_captures) {
+	ASSERT(captures);
+	ASSERT(non_captures);
 
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	PIECE p = WBISHOP | side_to_move;
 	int mc = material_counts[p];
 	int* pa_arr = piece_addr[p];
@@ -643,22 +719,35 @@ static int gen_bishop_moves(Move *ml) {
 		ASSERT(on_board(a));
 		ASSERT(board[a] == WBISHOP || board[a] == BBISHOP);
 
-		mi += gen_slide_move(ml + mi, a, UR);
-		mi += gen_slide_move(ml + mi, a, UL);
-		mi += gen_slide_move(ml + mi, a, DR);
-		mi += gen_slide_move(ml + mi, a, DL);
+		Moves_Added o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, UR);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, UL);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, DR);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, DL);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
 // generate pseudo legal rook moves
 // return number of moves generated
 // Assume ml is large enough.
 // Caller is responsible for ml memory.
-static int gen_rook_moves(Move *ml) {
-	ASSERT(ml);
+static Moves_Added gen_rook_moves(Move* captures, Move* non_captures) {
+	ASSERT(captures);
+	ASSERT(non_captures);
 
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	PIECE p = WROOK | side_to_move;
 	int mc = material_counts[p];
 	int* pa_arr = piece_addr[p];
@@ -668,22 +757,35 @@ static int gen_rook_moves(Move *ml) {
 		ASSERT(on_board(a));
 		ASSERT(board[a] == WROOK || board[a] == BROOK);
 
-		mi += gen_slide_move(ml + mi, a, U);
-		mi += gen_slide_move(ml + mi, a, D);
-		mi += gen_slide_move(ml + mi, a, L);
-		mi += gen_slide_move(ml + mi, a, R);
+		Moves_Added o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, U);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, D);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, L);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, R);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
 // generate pseudo legal queen moves
 // return number of moves generated
 // Assume ml is large enough.
 // Caller is responsible for ml memory.
-static int gen_queen_moves(Move *ml) {
-	ASSERT(ml);
+static Moves_Added gen_queen_moves(Move* captures, Move* non_captures) {
+	ASSERT(captures);
+	ASSERT(non_captures);
 
-	int mi = 0;
+	int cap_moves = 0;
+	int non_cap_moves = 0;
 	PIECE p = WQUEEN | side_to_move;
 	int mc = material_counts[p];
 	int* pa_arr = piece_addr[p];
@@ -693,22 +795,46 @@ static int gen_queen_moves(Move *ml) {
 		ASSERT(on_board(a));
 		ASSERT(board[a] == WQUEEN || board[a] == BQUEEN);
 
-		mi += gen_slide_move(ml + mi, a, UR);
-		mi += gen_slide_move(ml + mi, a, UL);
-		mi += gen_slide_move(ml + mi, a, DR);
-		mi += gen_slide_move(ml + mi, a, DL);
-		mi += gen_slide_move(ml + mi, a, U);
-		mi += gen_slide_move(ml + mi, a, D);
-		mi += gen_slide_move(ml + mi, a, L);
-		mi += gen_slide_move(ml + mi, a, R);
+		Moves_Added o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, U);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, D);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, L);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, R);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, UR);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, DR);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, UL);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
+		o = gen_slide_move(captures + cap_moves, non_captures + non_cap_moves, a, DL);
+		cap_moves += o.cap_moves;
+		non_cap_moves += o.non_cap_moves;
+
 	}
-	return mi;
+	return (Moves_Added){cap_moves, non_cap_moves};
 }
 
 // Sort the first mi entries in Move list ml by most valuable victim
 // then by least valuable attacker
 // Quciksort algorithm
-static void mvv_lva(Move *ml, int mi) {
+static void mvv_lva(Move* ml, int mi) {
 	ASSERT(ml);
 	if (mi <= 1) return;
 
@@ -747,23 +873,46 @@ static void mvv_lva(Move *ml, int mi) {
 // Caller is responsible for ml memory
 // Assume ml is large enough
 // Above assumptions are true for all move gen helper functions
-int gen_moves(Move *ml) {
+int gen_moves(Move* ml) {
 	ASSERT(ml);
 	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
 
-	int mi = 0;
-	if (side_to_move == WHITE)
-		mi += gen_wp_moves(ml);
-	else
-		mi += gen_bp_moves(ml);
-	mi += gen_knight_moves(ml + mi);
-	mi += gen_bishop_moves(ml + mi);
-	mi += gen_rook_moves(ml + mi);
-	mi += gen_queen_moves(ml + mi);
-	mi += gen_king_moves(ml + mi);
+	int cap_moves = 0;
+	int non_cap_moves = 0;
+	Move non_captures[256];
 
-	mvv_lva(ml, mi);
-	return mi;
+	Moves_Added o;
+	if (side_to_move == WHITE) 
+		o = gen_wp_moves(ml + cap_moves, non_captures + non_cap_moves);
+	else
+		o = gen_bp_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_knight_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_bishop_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_rook_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_queen_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_king_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	mvv_lva(ml, cap_moves);
+
+	memcpy(ml + cap_moves, non_captures, non_cap_moves * sizeof(Move));
+	return cap_moves + non_cap_moves;
 }
 
 // Move piece at source address to target address
@@ -844,7 +993,7 @@ static void remove_piece(int a, int hash) {
 // Revert board state to previous move using Move used to generate
 // most recent move.
 // Assume move is allocated and valid
-void unmake_move(Move *move) {
+void unmake_move(Move* move) {
 	ASSERT(move);
 	// reset game state
 	ep_addr = move->ep_addr;
@@ -917,7 +1066,7 @@ void unmake_move(Move *move) {
 // return 0 if move made and 1 if move failed due to leaving
 // king in check
 // assume addresses are valid
-void make_move(Move *move) {
+void make_move(Move* move) {
 	// start and end squares
 	int s = move->mv.sa;
 	int e = move->mv.ta;
