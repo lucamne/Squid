@@ -10,7 +10,9 @@
  * Date: 4/10/2026
  */
 
-#define ULL unsigned long long
+#include <stdint.h>
+
+#define ULL uint_fast64_t
 #define RB_MUTEX void*
 #define RB_HANDLE void*
 

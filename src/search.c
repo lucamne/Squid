@@ -109,7 +109,7 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	for (int i = 0; i < n_moves; i++) {
 		// stop once captures are all examined
 		// assume MVV-LVA ordering
-		if (ml[i].cap_id == EMPTY)
+		if (ml[i].cap_piece < WPAWN)
 			break;
 
 		make_move(ml + i);
@@ -144,11 +144,6 @@ Search_Result ab_search(AB_Params params) {
 	ASSERT(is_timed == 0 || ms_cutoff > 0);
 	Search_Result res = {0, 0};
 
-	if (is_repeat_position()) {
-		res.eval = 0;
-		pv->count = 0;
-		return res;
-	}
 	if (depth == 0) {
 		res.eval = quiesce(alpha, beta, is_timed, ms_cutoff);
 		pv->count = 0;
@@ -182,12 +177,13 @@ Search_Result ab_search(AB_Params params) {
 
 	// setup priority move
 	// maintain captures at front of move list
+	// assume MVV_LVA
 	if (prio->count > 0 && n_moves > 0) {
 		int prio_pos = -1;
 		int non_cap_pos = -1;
 		Move t = ml[0];
 		for (int i = 0; i < n_moves; i++) {
-			if (ml[i].cap_id == E_ID) {
+			if (ml[i].cap_piece == EMPTY) {
 				non_cap_pos = i;
 			}
 
@@ -273,11 +269,14 @@ Search_Result ab_search(AB_Params params) {
 
 	}
 
+	if (is_repeat_position()) {
+		best_score = 0;
+	}
 	// no moves and king not attacked is stalemate
 	if (!n_moves) {
-		if (side_to_move == WHITE && !is_square_attacked(piece_addr[piece_ids[WK - 2][0]], BLACK)) {
+		if (side_to_move == WHITE && !is_square_attacked(piece_addr[WKING][0], BLACK)) {
 			best_score = 0;
-		} else if (side_to_move == BLACK && !is_square_attacked(piece_addr[piece_ids[BK - 2][0]], WHITE)) {
+		} else if (side_to_move == BLACK && !is_square_attacked(piece_addr[BKING][0], WHITE)) {
 			best_score = 0;
 		}
 	}

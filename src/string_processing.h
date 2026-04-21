@@ -12,17 +12,17 @@
 // Converts promo PIECE to ascii char
 static char promo_to_char(PIECE p) {
 	switch(p) {
-		case BR:
-		case WR:
+		case BROOK:
+		case WROOK:
 			return 'r';
-		case BN:
-		case WN:
+		case BKNIGHT:
+		case WKNIGHT:
 			return 'n';
-		case BB:
-		case WB:
+		case BBISHOP:
+		case WBISHOP:
 			return 'b';
-		case BQ:
-		case WQ:
+		case BQUEEN:
+		case WQUEEN:
 			return 'q';
 		default:
 			return ' ';

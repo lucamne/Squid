@@ -7,7 +7,7 @@ const int EG_PIECE_VALS[6] = {94, 281, 297, 512, 936, 0};
 
 // The presence of each type of piece increments the game phase score
 // The lower the score, the closer the game is to engame
-const int GAME_PHASE_INC[12] = {0, 1, 1, 2, 4, 0, 0, 1, 1, 2, 2, 0};
+const int GAME_PHASE_INC[12] = {0, 0, 1, 1, 1, 1, 2, 2, 4, 4, 0, 0};
 
 const int TRADE_DOWN = 10;	// Bonus for trading pieces when winning
 const int NPP = 200;		// No pawns penalty
@@ -153,7 +153,7 @@ int eg_king_table[64] = {
 };
 
 // Square eval for each piece
-// Pieces are ordered WP, WN, WB, WR, WQ, WK then the same for black
+// Pieces are ordered WP, BP, WN, BN, WB, BB, WR, BR, WQ, BQ, WK, BK
 int mg_piece_sq[12][64];
 int eg_piece_sq[12][64];
 
@@ -175,179 +175,162 @@ int* eg_piece_tables[6] = {
 	eg_king_table
 };
 
-
-
-// calculate the number of pseudo legal white pawn moves
-static int wp_mobility(void) {
+// calculate the number of pseudo legal moves for a white pawn at address a
+static int wp_mobility(int a) {
 	int n_moves = 0;
-	int n_wp = p_count(WP);
 
-	for (int i = 0; i < n_wp; i++) {
-		int id = piece_ids[WP - 2][i];
-		int a = piece_addr[id];
-		ASSERT(addr_to_rank(a) <= 7);
-		ASSERT(on_board(a - 10));
+	ASSERT(board[a] == WPAWN);
+	ASSERT(addr_to_rank(a) <= 7);
+	ASSERT(on_board(a - 10));
 
-		// advance
-		if (pt_at_addr(a - 10) == EMPTY) {
+	// advance
+	if (board[a - 10] == EMPTY) {
+		n_moves++;
+		if (addr_to_rank(a) == 7)
+			n_moves += 3;
+		if (addr_to_rank(a) == 2 && board[a - 20] == EMPTY) {
 			n_moves++;
-			if (addr_to_rank(a) == 7)
-				n_moves += 3;
-			if (addr_to_rank(a) == 2 && pt_at_addr(a - 20) == EMPTY) {
-				n_moves++;
-			}
 		}
-		// captures
-		if (piece_color[board[a - 9]] == BLACK || ep_addr == a - 9) {
-			n_moves++;
-			if (addr_to_rank(a) == 7)
-				n_moves += 3;
-		}
-		if (piece_color[board[a - 11]] == BLACK || ep_addr == a - 11) {
-			n_moves++;
-			if (addr_to_rank(a) == 7)
-				n_moves += 3;
-		}
+	}
+	// captures
+	PIECE tp = board[a - 9];
+	if (check_color(tp, BLACK) || ep_addr == a - 9) {
+		n_moves++;
+		if (addr_to_rank(a) == 7)
+			n_moves += 3;
+	}
+	tp = board[a - 11];
+	if (check_color(tp, BLACK) || ep_addr == a - 11) {
+		n_moves++;
+		if (addr_to_rank(a) == 7)
+			n_moves += 3;
 	}
 	return n_moves;
 }
 
-// calculate the number of pseudo legal black pawn moves
-static int bp_mobility(void) {
+// calculate the number of pseudo legal moves for a black pawn at address a
+static int bp_mobility(int a) {
 	int n_moves = 0;
-	int n_bp = p_count(BP);
 
-	for (int i = 0; i < n_bp; i++) {
-		int id = piece_ids[BP - 2][i];
-		int a = piece_addr[id];
-		ASSERT(addr_to_rank(a) <= 7);
-		ASSERT(on_board(a + 10));
+	ASSERT(board[a] == BPAWN);
+	ASSERT(addr_to_rank(a) <= 7);
+	ASSERT(on_board(a + 10));
 
-		// advance
-		if (pt_at_addr(a + 10) == EMPTY) {
-			n_moves++;
-			if (addr_to_rank(a) == 2)
-				n_moves += 3;
-			if (addr_to_rank(a) == 7 && pt_at_addr(a + 20) == EMPTY) {
-				n_moves++;
-			}
-		}
-		// captures
-		if (piece_color[board[a + 9]] == WHITE || ep_addr == a + 9) {
-			if (addr_to_rank(a) == 2)
-				n_moves += 3;
+	// advance
+	if (board[a + 10] == EMPTY) {
+		n_moves++;
+		if (addr_to_rank(a) == 2)
+			n_moves += 3;
+		if (addr_to_rank(a) == 7 && board[a + 20] == EMPTY) {
 			n_moves++;
 		}
-		if (piece_color[board[a + 11]] == WHITE || ep_addr == a + 11) {
-			if (addr_to_rank(a) == 2)
-				n_moves += 3;
-			n_moves++;
-		}
+	}
+	// captures
+	PIECE tp = board[a + 9];
+	if (check_color(tp, WHITE) || ep_addr == a + 9) {
+		if (addr_to_rank(a) == 2)
+			n_moves += 3;
+		n_moves++;
+	}
+	tp = board[a + 11];
+	if (check_color(tp, WHITE) || ep_addr == a + 11) {
+		if (addr_to_rank(a) == 2)
+			n_moves += 3;
+		n_moves++;
 	}
 	return n_moves;
 }
 
-// calculate number of pseudo legal knight moves for side color
-static int knight_mobility(COLOR c) {
-	ASSERT(c == WHITE || c == BLACK);
+// Return 1 if target address is a valid target for a piece of color c
+// Return 0 if not
+// DO NOT USE for pawns due to pawn capture rules
+//
+// Target is valid if it is empty or not color c
+// TODO There is an identical function in move_gen.c
+static int is_valid_target(int ta, COLOR c) {
+	PIECE p = board[ta];
+	return (p != OFF_BOARD) && (!check_color(p, c) || p == EMPTY);
+}
+
+// calculate number of pseudo legal knight moves for a knight at address a
+static int knight_mobility(int a) {
+	ASSERT(board[a] == WKNIGHT || board[a] == BKNIGHT);
+	COLOR c = CMASK & board[a];
 
 	int n_moves = 0;
-	int np;
-	int *pid_arr;
-	if (c == WHITE) {
-		np = p_count(WN);
-		pid_arr = piece_ids[WN - 2];
-	} else {
-		np = p_count(BN);
-		pid_arr = piece_ids[BN - 2];
-	}
-
-	for (int i = 0; i < np; i++) {
-		int id = pid_arr[i];
-		int a = piece_addr[id];
-
-		if (piece_color[board[a - 21]] != c && pt_at_addr(a - 21) != OFF_BOARD)
-			n_moves++;
-		if (piece_color[board[a - 19]] != c && pt_at_addr(a - 19) != OFF_BOARD)
-			n_moves++;
-		if (piece_color[board[a - 12]] != c && pt_at_addr(a - 12) != OFF_BOARD)
-			n_moves++;
-		if (piece_color[board[a - 8]] != c && pt_at_addr(a - 8) != OFF_BOARD)
-			n_moves++;
-		if (piece_color[board[a + 21]] != c && pt_at_addr(a + 21) != OFF_BOARD)
-			n_moves++;
-		if (piece_color[board[a + 19]] != c && pt_at_addr(a + 19) != OFF_BOARD)
-			n_moves++;
-		if (piece_color[board[a + 12]] != c && pt_at_addr(a + 12) != OFF_BOARD)
-			n_moves++;
-		if (piece_color[board[a + 8]] != c && pt_at_addr(a + 8) != OFF_BOARD)
-			n_moves++;
-	}
+	if (is_valid_target(a - 21, c))
+		n_moves++;
+	if (is_valid_target(a - 19, c))
+		n_moves++;
+	if (is_valid_target(a - 12, c))
+		n_moves++;
+	if (is_valid_target(a - 8, c))
+		n_moves++;
+	if (is_valid_target(a + 21, c))
+		n_moves++;
+	if (is_valid_target(a + 19, c))
+		n_moves++;
+	if (is_valid_target(a + 12, c))
+		n_moves++;
+	if (is_valid_target(a + 8, c))
+		n_moves++;
 	return n_moves;
 }
 
-// calculate number of pseudo legal king moves for side color
-static int king_mobility(COLOR c) {
-	ASSERT(c == WHITE || c == BLACK);
+// calculate number of pseudo legal moves for a king at address a
+static int king_mobility(int a) {
+	ASSERT(board[a] == WKING || board[a] == BKING);
+	COLOR c = board[a] & CMASK;
 
 	int n_moves = 0;
-	int id;
-	if (c == WHITE) {
-		ASSERT(material_counts[WK - 2]);
-		id = piece_ids[WK - 2][0];
-	} else {
-		ASSERT(material_counts[BK - 2]);
-		id = piece_ids[BK - 2][0];
-	}
-	int a = piece_addr[id];
 
-	if (piece_color[board[a - 11]] != c && pt_at_addr(a - 11) != OFF_BOARD)
+	if (is_valid_target(a - 11, c))
 		n_moves++;
-	if (piece_color[board[a - 10]] != c && pt_at_addr(a - 10) != OFF_BOARD)
+	if (is_valid_target(a - 10, c))
 		n_moves++;
-	if (piece_color[board[a - 9]] != c && pt_at_addr(a - 9) != OFF_BOARD)
+	if (is_valid_target(a - 9, c))
 		n_moves++;
-	if (piece_color[board[a - 1]] != c && pt_at_addr(a - 1) != OFF_BOARD)
+	if (is_valid_target(a - 1, c))
 		n_moves++;
-	if (piece_color[board[a + 1]] != c && pt_at_addr(a + 1) != OFF_BOARD)
+	if (is_valid_target(a + 1, c))
 		n_moves++;
-	if (piece_color[board[a + 9]] != c && pt_at_addr(a + 9) != OFF_BOARD)
+	if (is_valid_target(a + 9, c))
 		n_moves++;
-	if (piece_color[board[a + 10]] != c && pt_at_addr(a + 10) != OFF_BOARD)
+	if (is_valid_target(a + 10, c))
 		n_moves++;
-	if (piece_color[board[a + 11]] != c && pt_at_addr(a + 11) != OFF_BOARD)
+	if (is_valid_target(a + 11, c))
 		n_moves++;
 
 	if (c == WHITE) {
 		if (		castle_rights & K_CASTLE && 
-				pt_at_addr(a + 1) == EMPTY && 
-				pt_at_addr(a + 2) == EMPTY) {
-			ASSERT(pt_at_addr(98) == WR);
-			ASSERT(pt_at_addr(95) == WK);
+				board[a + 1] == EMPTY && 
+				board[a + 2] == EMPTY) {
+			ASSERT(board[98] == WROOK);
+			ASSERT(board[95] == WKING);
 			n_moves++;
 		}
 		if (		castle_rights & Q_CASTLE && 
-				pt_at_addr(a - 1) == EMPTY && 
-				pt_at_addr(a - 2) == EMPTY && 
-				pt_at_addr(a - 3) == EMPTY) {
-			ASSERT(pt_at_addr(91) == WR);
-			ASSERT(pt_at_addr(95) == WK);
+				board[a - 1] == EMPTY && 
+				board[a - 2] == EMPTY && 
+				board[a - 3] == EMPTY) {
+			ASSERT(board[91] == WROOK);
+			ASSERT(board[95] == WKING);
 			n_moves++;
 		}
 	} else {
 		if (		castle_rights & k_CASTLE && 
-				pt_at_addr(a + 1) == EMPTY && 
-				pt_at_addr(a + 2) == EMPTY) {
-			ASSERT(pt_at_addr(28) == BR);
-			ASSERT(pt_at_addr(25) == BK);
+				board[a + 1] == EMPTY && 
+				board[a + 2] == EMPTY) {
+			ASSERT(board[28] == BROOK);
+			ASSERT(board[25] == BKING);
 			n_moves++;
 		}
 		if (		castle_rights & q_CASTLE && 
-				pt_at_addr(a - 1) == EMPTY && 
-				pt_at_addr(a - 2) == EMPTY && 
-				pt_at_addr(a - 3) == EMPTY) {
-			ASSERT(pt_at_addr(21) == BR);
-			ASSERT(pt_at_addr(25) == BK);
+				board[a - 1] == EMPTY && 
+				board[a - 2] == EMPTY && 
+				board[a - 3] == EMPTY) {
+			ASSERT(board[21] == BROOK);
+			ASSERT(board[25] == BKING);
 			n_moves++;
 		}
 	}
@@ -360,22 +343,24 @@ static int king_mobility(COLOR c) {
 // Aassume a bishop, rook, or queen is located at addr
 static int slide_mobility(int a, DIRECTION d) {
 	ASSERT(on_board(a));
-	ASSERT(		pt_at_addr(a) == WQ || 
-			pt_at_addr(a) == BQ || 
-			pt_at_addr(a) == WB || 
-			pt_at_addr(a) == BB || 
-			pt_at_addr(a) == WR || 
-			pt_at_addr(a) == BR);
+	ASSERT(		board[a] == WQUEEN || 
+			board[a] == BQUEEN || 
+			board[a] == WBISHOP || 
+			board[a] == BBISHOP || 
+			board[a] == WROOK || 
+			board[a] == BROOK);
 
-	COLOR c = piece_color[board[a]];
+	COLOR c = (CMASK & board[a]) ^ 1u;
 	int n_moves = 0;
 	int off = d;
 	while (1) {
-		int id = board[a + off];
-		if (piece_type[id] == EMPTY) {
+		PIECE p = board[a + off];
+		if (p == OFF_BOARD) {
+			break;
+		} else if (p == EMPTY) {
 			n_moves++;
 			off += d;
-		} else if (piece_color[id] == c) {
+		} else if (check_color(p, c)) {
 			n_moves++;
 			break;
 		} else {
@@ -385,79 +370,40 @@ static int slide_mobility(int a, DIRECTION d) {
 	return n_moves;
 }
 
-// calculate number of pseudo legal bishop moves for side color
-static int bishop_mobility(COLOR c) {
+// calculate number of pseudo legal moves for a bishop at address a
+static int bishop_mobility(int a) {
+	ASSERT(board[a] == WBISHOP || board[a] == BBISHOP);
 	int n_moves = 0;
-	int np;
-	int *pid_arr;
-	if (c == WHITE) {
-		np = p_count(WB);
-		pid_arr = piece_ids[WB - 2];
-	} else {
-		np = p_count(BB);
-		pid_arr = piece_ids[BB - 2];
-	}
-
-	for (int i = 0; i < np; i++) {
-		int id = pid_arr[i];
-		int a = piece_addr[id];
-		n_moves += slide_mobility(a, UR);
-		n_moves += slide_mobility(a, UL);
-		n_moves += slide_mobility(a, DR);
-		n_moves += slide_mobility(a, DL);
-	}
+	n_moves += slide_mobility(a, UR);
+	n_moves += slide_mobility(a, UL);
+	n_moves += slide_mobility(a, DR);
+	n_moves += slide_mobility(a, DL);
 	return n_moves;
 }
 
-// calculate number of pseudo legal rook moves for side color
-static int rook_mobility(COLOR c) {
+// calculate number of pseudo legal moves for a rook at address a
+static int rook_mobility(int a) {
+	ASSERT(board[a] == WROOK || board[a] == BROOK);
 	int n_moves = 0;
-	int np;
-	int *pid_arr;
-	if (c == WHITE) {
-		np = p_count(WR);
-		pid_arr = piece_ids[WR - 2];
-	} else {
-		np = p_count(BR);
-		pid_arr = piece_ids[BR - 2];
-	}
-
-	for (int i = 0; i < np; i++) {
-		int id = pid_arr[i];
-		int a = piece_addr[id];
-		n_moves += slide_mobility(a, U);
-		n_moves += slide_mobility(a, D);
-		n_moves += slide_mobility(a, L);
-		n_moves += slide_mobility(a, R);
-	}
+	n_moves += slide_mobility(a, U);
+	n_moves += slide_mobility(a, D);
+	n_moves += slide_mobility(a, L);
+	n_moves += slide_mobility(a, R);
 	return n_moves;
 }
 
-// calculate number of pseudo legal queen moves for side color
-static int queen_mobility(COLOR c) {
+// calculate number of pseudo legal moves for a queen at address a
+static int queen_mobility(int a) {
+	ASSERT(board[a] == WQUEEN || board[a] == BQUEEN);
 	int n_moves = 0;
-	int np;
-	int *pid_arr;
-	if (c == WHITE) {
-		np = p_count(WQ);
-		pid_arr = piece_ids[WQ - 2];
-	} else {
-		np = p_count(BQ);
-		pid_arr = piece_ids[BQ - 2];
-	}
-
-	for (int i = 0; i < np; i++) {
-		int id = pid_arr[i];
-		int a = piece_addr[id];
-		n_moves += slide_mobility(a, UR);
-		n_moves += slide_mobility(a, UL);
-		n_moves += slide_mobility(a, DR);
-		n_moves += slide_mobility(a, DL);
-		n_moves += slide_mobility(a, U);
-		n_moves += slide_mobility(a, D);
-		n_moves += slide_mobility(a, L);
-		n_moves += slide_mobility(a, R);
-	}
+	n_moves += slide_mobility(a, UR);
+	n_moves += slide_mobility(a, UL);
+	n_moves += slide_mobility(a, DR);
+	n_moves += slide_mobility(a, DL);
+	n_moves += slide_mobility(a, U);
+	n_moves += slide_mobility(a, D);
+	n_moves += slide_mobility(a, L);
+	n_moves += slide_mobility(a, R);
 	return n_moves;
 }
 
@@ -467,19 +413,52 @@ static int mobility(void) {
 	int wm = 0;	// white mobility
 	int bm = 0;	// black mobility
 
-	wm += wp_mobility();
-	bm += bp_mobility();
-	wm += knight_mobility(WHITE);
-	bm += knight_mobility(BLACK);
-	wm += king_mobility(WHITE);
-	bm += king_mobility(BLACK);
-	wm += bishop_mobility(WHITE);
-	bm += bishop_mobility(BLACK);
-	wm += rook_mobility(WHITE);
-	bm += rook_mobility(BLACK);
-	wm += queen_mobility(WHITE);
-	bm += queen_mobility(BLACK);
-
+	for (int addr = 21; addr <= 98; addr++) {
+		PIECE p = board[addr];
+		switch (p) {
+			case WPAWN:
+				wm += wp_mobility(addr);
+				break;
+			case BPAWN:
+				bm += bp_mobility(addr);
+				break;
+			case WKNIGHT:
+				wm += knight_mobility(addr);
+				break;
+			case BKNIGHT:
+				bm += knight_mobility(addr);
+				break;
+			case WBISHOP:
+				wm += bishop_mobility(addr);
+				break;
+			case BBISHOP:
+				bm += bishop_mobility(addr);
+				break;
+			case WROOK:
+				wm += rook_mobility(addr);
+				break;
+			case BROOK:
+				bm += rook_mobility(addr);
+				break;
+			case WQUEEN:
+				wm += queen_mobility(addr);
+				break;
+			case BQUEEN:
+				bm += queen_mobility(addr);
+				break;
+			case WKING:
+				wm += king_mobility(addr);
+				break;
+			case BKING:
+				bm += king_mobility(addr);
+				break;
+			case EMPTY:
+			case OFF_BOARD:
+				break;
+			default:
+				ASSERT(0);
+		}
+	}
 	return wm - bm;
 }
 
@@ -487,22 +466,21 @@ static int mobility(void) {
 // If pawns are doubled only one of them is counted as bad
 static int bad_pawns(COLOR c) {
 	ASSERT(c == WHITE || c == BLACK);
-	int *pid_arr;
+	int *pa_arr;
 	int np;
 	if (c == WHITE) {
-		pid_arr = piece_ids[WP - 2];
-		np = p_count(WP);
+		pa_arr = piece_addr[WPAWN];
+		np = material_counts[WPAWN];
 	} else {
-		pid_arr = piece_ids[BP - 2];
-		np = p_count(BP);
+		pa_arr = piece_addr[BPAWN];
+		np = material_counts[BPAWN];
 	}
 
 	int bad_pawns = 0;
 
 	char file_count[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 	for (int i = 0; i < np; i++) {
-		int id = pid_arr[i];
-		int a = piece_addr[id];
+		int a = pa_arr[i];
 		file_count[addr_to_file(a) - 1]++;
 	}
 
@@ -521,7 +499,6 @@ static int bad_pawns(COLOR c) {
 	return bad_pawns;
 }
 
-
 // Return 1 if position is most likely a draw
 // Return 0 if not
 static int is_draw(void) {
@@ -530,11 +507,11 @@ static int is_draw(void) {
 	if (is_repeat_position()) return 1;
 
 	// catches most draws by insufficient material
-	if (!p_count(WP) + !p_count(BP)) {
-		int score = 9 * (p_count(WQ) - p_count(BQ)) + 
-			5 * (p_count(WR) - p_count(BR)) +
-			3 * (p_count(WB) - p_count(BB)) +
-			3 * (p_count(WN) - p_count(BN));
+	if (!material_counts[WPAWN] + !material_counts[BPAWN]) {
+		int score = 9 * (material_counts[WQUEEN] - material_counts[BQUEEN]) + 
+			5 * (material_counts[WROOK] - material_counts[BROOK]) +
+			3 * (material_counts[WBISHOP] - material_counts[BBISHOP]) +
+			3 * (material_counts[WKNIGHT] - material_counts[BKNIGHT]);
 
 		if (score > -4 && score < 4)
 			return 1;
@@ -555,23 +532,22 @@ static int piece_square_eval(void) {
 	int mg_score = 0;
 	int eg_score = 0;
 
-	for (PIECE p = WP; p <= BK; p++) {
-		int np = p_count(p);
-		game_phase += np * GAME_PHASE_INC[p - 2];
-		for (int i = 0; i < np; i++) {
-			int ms = mg_piece_sq[p - 2][addr_to_64(piece_addr[piece_ids[p - 2][i]])];
-			int es = eg_piece_sq[p - 2][addr_to_64(piece_addr[piece_ids[p - 2][i]])];
+	for (int addr = 21; addr <= 98; addr++) {
+		PIECE p = board[addr];
+		if (p <= OFF_BOARD)
+			continue;
+		game_phase += GAME_PHASE_INC[p - WPAWN];
+		int ms = mg_piece_sq[p - WPAWN][addr_to_64(addr)];
+		int es = eg_piece_sq[p - WPAWN][addr_to_64(addr)];
 
-			if (p < BP) {
-				mg_score += ms;
-				eg_score += es;
-			} else {
-				mg_score -= ms;
-				eg_score -= es;
-			}
+		if (check_color(p, WHITE)) {
+			mg_score += ms;
+			eg_score += es;
+		} else {
+			mg_score -= ms;
+			eg_score -= es;
 		}
 	}
-
 	if (game_phase > 24) game_phase = 24;
 	return (mg_score * game_phase + eg_score *(24 - game_phase)) / 24;
 }
@@ -582,10 +558,10 @@ int evaluate(void) {
 	int score = piece_square_eval();
 
 	// trade down pieces when winning
-	int minor_major_cnt = 	p_count(WN) + p_count(WB) + 
-		p_count(WR) + p_count(WQ) +
-		p_count(BN) + p_count(BB) + 
-		p_count(BR) + p_count(BQ);
+	int minor_major_cnt = 	material_counts[WKNIGHT] + material_counts[WBISHOP] + 
+		material_counts[WROOK] + material_counts[WQUEEN] +
+		material_counts[BKNIGHT] + material_counts[BBISHOP] + 
+		material_counts[BROOK] + material_counts[BQUEEN];
 	if (minor_major_cnt <= 14) {
 		if (score > 0)
 			score += TRADE_DOWN * (14 - minor_major_cnt);
@@ -593,16 +569,16 @@ int evaluate(void) {
 			score -= TRADE_DOWN * (14 - minor_major_cnt);
 	}
 
-	if (!p_count(WP)) score -= NPP;
-	if (!p_count(BP)) score += NPP;
+	if (!material_counts[WPAWN]) score -= NPP;
+	if (!material_counts[BPAWN]) score += NPP;
 
 	// pairs
-	if (p_count(WB) >= 2) score += BISHOP_PAIR;
-	if (p_count(BB) >= 2) score -= BISHOP_PAIR;
-	if (p_count(WN) >= 2) score += KNIGHT_PAIR;
-	if (p_count(BN) >= 2) score -= KNIGHT_PAIR;
-	if (p_count(WR) >= 2) score += ROOK_PAIR;
-	if (p_count(BR) >= 2) score -= ROOK_PAIR;
+	if (material_counts[WBISHOP] >= 2) score += BISHOP_PAIR;
+	if (material_counts[BBISHOP] >= 2) score -= BISHOP_PAIR;
+	if (material_counts[WKNIGHT] >= 2) score += KNIGHT_PAIR;
+	if (material_counts[BKNIGHT] >= 2) score -= KNIGHT_PAIR;
+	if (material_counts[WROOK] >= 2) score += ROOK_PAIR;
+	if (material_counts[BROOK] >= 2) score -= ROOK_PAIR;
 
 	score += MOB * mobility();
 	score -= DI * (bad_pawns(WHITE) - bad_pawns(BLACK));
@@ -616,10 +592,10 @@ int evaluate(void) {
 void init_eval(void) {
 	for (int i = 0; i < 6; i++) {
 		for (int n = 0; n < 64; n++) {
-			mg_piece_sq[i][n] = mg_piece_tables[i][n] + MG_PIECE_VALS[i];
-			eg_piece_sq[i][n] = eg_piece_tables[i][n] + EG_PIECE_VALS[i];
-			mg_piece_sq[i + 6][n] = mg_piece_tables[i][n ^ 56] + MG_PIECE_VALS[i];
-			eg_piece_sq[i + 6][n] = eg_piece_tables[i][n ^ 56] + EG_PIECE_VALS[i];
+			mg_piece_sq[2 * i][n] = mg_piece_tables[i][n] + MG_PIECE_VALS[i];
+			eg_piece_sq[2 * i][n] = eg_piece_tables[i][n] + EG_PIECE_VALS[i];
+			mg_piece_sq[2 * i + 1][n] = mg_piece_tables[i][n ^ 56] + MG_PIECE_VALS[i];
+			eg_piece_sq[2 * i + 1][n] = eg_piece_tables[i][n ^ 56] + EG_PIECE_VALS[i];
 		}
 	}
 }

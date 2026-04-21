@@ -36,41 +36,15 @@ static void prng_init(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// load_position() Helpers
-
-// Register new piece 
-static void register_piece(PIECE p, int addr) {
-	ASSERT(p >= WP && p <= BK);
-	ASSERT(on_board(addr));
-	ASSERT(next_id < 64);
-
-	int id = next_id++;
-	board[addr] = id;
-	piece_addr[id] = addr;
-	piece_type[id] = p;
-	if (p <= OFF_BOARD)
-		piece_color[id] = NC;
-	else if (p >= WP && p <= WK)
-		piece_color[id] = WHITE;
-	else
-		piece_color[id] = BLACK;
-	add_id(id);
-
-	hash_piece(p, addr);
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 /// Public Functions
 
 int load_position(char* fen) {
 	ASSERT(fen);
 
-	for (int i = 0; i < 12; i++) {
+	for (int i = 0; i < 16; i++)
 		material_counts[i] = 0;
-	}
+
 	// first two ids already occupied by empty and offboard
-	next_id = 2;
 	game_hash = 0ull;
 
 	int pos = 0;
@@ -81,40 +55,40 @@ int load_position(char* fen) {
 		PIECE p = EMPTY;
 		switch (fen[pos]) {
 			case 'P':
-				p = WP;
+				p = WPAWN;
 				break;
 			case 'N':
-				p = WN;
+				p = WKNIGHT;
 				break;
 			case 'B':
-				p = WB;
+				p = WBISHOP;
 				break;
 			case 'R':
-				p = WR;
+				p = WROOK;
 				break;
 			case 'Q':
-				p = WQ;
+				p = WQUEEN;
 				break;
 			case 'K':
-				p = WK;
+				p = WKING;
 				break;
 			case 'p':
-				p = BP;
+				p = BPAWN;
 				break;
 			case 'n':
-				p = BN;
+				p = BKNIGHT;
 				break;
 			case 'b':
-				p = BB;
+				p = BBISHOP;
 				break;
 			case 'r':
-				p = BR;
+				p = BROOK;
 				break;
 			case 'q':
-				p = BQ;
+				p = BQUEEN;
 				break;
 			case 'k':
-				p = BK;
+				p = BKING;
 				break;
 			case '/':
 				if (x != 8) return 1;
@@ -134,7 +108,12 @@ int load_position(char* fen) {
 		if (p != EMPTY) {
 			int addr = 10 * (y + 2) + x + 1;
 			if (!on_board(addr)) return 1;
-			register_piece(p, addr);
+
+			board[addr] = p;
+			++material_counts[p];
+			piece_addr[p][material_counts[p] - 1] = addr;
+			hash_piece(p, addr);
+
 			x++;
 		}
 		pos++;
@@ -221,14 +200,9 @@ void init(void) {
 	// init offboard
 	for (int i = 0; i < 120; i++) {
 		if (i < 21 || i > 98 || i % 10 == 0 || i % 10 == 9) {
-			board[i] = OB_ID;
+			board[i] = OFF_BOARD;
 		}
 	}
-	// first two ids are always Empty and Offboard
-	piece_color[E_ID] = piece_color[OB_ID] = NC;
-	piece_type[E_ID] = EMPTY;
-	piece_type[OB_ID] = OFF_BOARD;
-	piece_addr[E_ID] = piece_addr[OB_ID] = -1;
 
 	prng_init();
 	for (int i = 0; i < NUM_ZOBRIST_KEYS; i++) {

@@ -21,29 +21,29 @@ static void addr_to_str(int addr, char* buffer) {
 // converts PIECE to ascii char
 static char piece_to_char(PIECE p) {
 	switch(p) {
-		case WP:
+		case WPAWN:
 			return 'P';
-		case WR:
+		case WROOK:
 			return 'R';
-		case WN:
+		case WKNIGHT:
 			return 'N';
-		case WB:
+		case WBISHOP:
 			return 'B';
-		case WQ:
+		case WQUEEN:
 			return 'Q';
-		case WK:
+		case WKING:
 			return 'K';
-		case BP:
+		case BPAWN:
 			return 'p';
-		case BR:
+		case BROOK:
 			return 'r';
-		case BN:
+		case BKNIGHT:
 			return 'n';
-		case BB:
+		case BBISHOP:
 			return 'b';
-		case BQ:
+		case BQUEEN:
 			return 'q';
-		case BK:
+		case BKING:
 			return 'k';
 		default:
 			return ' ';
@@ -56,7 +56,7 @@ static void print_board(void) {
 		printf("   ---------------------------------\n");
 		printf(" %i |", 8 - y);
 		for (int x = 0; x < 8; x++) {
-			printf(" %c |", piece_to_char(piece_type[board[(y + 2) * 10 + x + 1]]));
+			printf(" %c |", piece_to_char(board[(y + 2) * 10 + x + 1]));
 		}
 		printf("\n");
 	}
@@ -258,4 +258,52 @@ void perft_test(int max_depth) {
 	printf("Total time elapsed: %llu.%llu\n", total_secs, total_milli);
 	printf("Nodes/sec: ~%lli\n", 1000 * (total_nodes / (1000 * total_secs + total_milli)));
 	printf("***********************\n\n");
+}
+
+// Generate some duplicate position and confirm hash is the same
+static void hash_check(void) {
+	load_position(STARTING_FEN);
+	ULL hash = game_hash;
+	make_manual_move("b1c3", 4);
+	make_manual_move("b8c6", 4);
+	make_manual_move("c3b1", 4);
+	make_manual_move("c6b8", 4);
+	if (hash != game_hash) {
+		printf("Hash check failed!\n");
+		return;
+	}
+
+	load_position(STARTING_FEN);
+	make_manual_move("d2d4", 4);
+	make_manual_move("d7d5", 4);
+	make_manual_move("b1c3", 4);
+	make_manual_move("b8c6", 4);
+	make_manual_move("c3d5", 4);
+	make_manual_move("c6d4", 4);
+	make_manual_move("d5c3", 4);
+	make_manual_move("d4c6", 4);
+	make_manual_move("c3b1", 4);
+	make_manual_move("c6b8", 4);
+	hash = game_hash;
+	load_position(STARTING_FEN);
+	make_manual_move("d2d4", 4);
+	make_manual_move("d7d5", 4);
+	make_manual_move("d1d3", 4);
+	make_manual_move("d8d6", 4);
+	make_manual_move("d3f3", 4);
+	make_manual_move("d6f6", 4);
+	make_manual_move("f3d5", 4);
+	make_manual_move("f6d4", 4);
+	make_manual_move("d5f3", 4);
+	make_manual_move("d4f6", 4);
+	make_manual_move("f3d3", 4);
+	make_manual_move("f6d6", 4);
+	make_manual_move("d3d1", 4);
+	make_manual_move("d6d8", 4);
+	if (hash != game_hash) {
+		printf("Hash check failed!\n");
+		return;
+	}
+
+	printf("Hash check passed!\n");
 }

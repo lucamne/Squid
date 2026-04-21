@@ -4,3 +4,5 @@
 bin/Logfile001.log
 *.exe
 *.xlsx
+*.obj
+*.pdb
