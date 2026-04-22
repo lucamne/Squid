@@ -59,11 +59,11 @@ static ULL search_start_time;			// start time of search
 // modify transposition table size to control memory usage
 // table size must be power of 2 for fast modulo
 // update TTMOD accordingly
-#define TTABLE_SIZE 4194304
+#define TTABLE_SIZE 8388608
 // bit mask to translate hash to address within TABLE_SIZE
 // mask the lower part of hash with number of bits needed to represent
 // TTABLE_SIZE
-#define TTMOD 0b1111111111111111111111ull
+#define TTMOD 0b11111111111111111111111ull
 TT_Entry ttable[TTABLE_SIZE];		// transposition table
 					// should be wiped before new game
 int hash_entries_active;
@@ -79,12 +79,12 @@ static TT_Entry tt_search(void) {
 // add current position to transposition table
 static void tt_add(NODE_TYPE nt, int depth, int eval) {
 	ULL i = game_hash & TTMOD;
-	if (!ttable[i].active) {
-		ttable[i] = (TT_Entry){1, game_hash, (char)depth, nt, eval};
-		hash_entries_active++;
-	}
-	else if (ttable[i].depth < depth) {
-		ttable[i] = (TT_Entry){1, game_hash, (char)depth, nt, eval};
+	TT_Entry* t = ttable + i;
+	if (t->depth < depth) {
+		*t = (TT_Entry){1, game_hash, (char)depth, nt, eval};
+		if (!t->active) {
+			hash_entries_active++;
+		}
 	}
 }
 
@@ -346,6 +346,8 @@ static void send_bestmove(MMove bestmove) {
 }
 
 void iterative_ab_search(ULL search_time) {
+	send_general_info();
+
 	nodes_searched = 0ULL;
 	search_start_time = platform_get_time_ms();
 	nodes_since_info_send = 0ULL;
@@ -432,6 +434,7 @@ void iterative_ab_search(ULL search_time) {
 void wipe_tt(void) {
 	for (int i = 0; i < TTABLE_SIZE; i++) {
 		ttable[i].active = 0;
+		ttable[i].depth = 0;
 	}
 	hash_entries_active = 0;
 }
