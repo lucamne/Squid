@@ -80,11 +80,12 @@ static TT_Entry tt_search(void) {
 static void tt_add(NODE_TYPE nt, int depth, int eval) {
 	ULL i = game_hash & TTMOD;
 	TT_Entry* t = ttable + i;
+
+	if (!t->active) {
+		hash_entries_active++;
+	}
 	if (t->depth < depth) {
 		*t = (TT_Entry){1, game_hash, (char)depth, nt, eval};
-		if (!t->active) {
-			hash_entries_active++;
-		}
 	}
 }
 
