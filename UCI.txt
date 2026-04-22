@@ -59,10 +59,12 @@ Note: not all UCI commands are implemented yet. This will be an expanding list
 		- score:
 			- cp <x>: score in centipawns
 		- time <x>: time searched in ms. Sent together with pv
-		- nodes: nodes searched
-		- nps: nodes per second
-		- currmove: current move being evaluated
-		- currmovenumbwe: current move number starting at 1
+		- nodes <x>: nodes searched
+		- nps <x>: nodes per second
+		- currmove <move>: current move being evaluated
+		- currmovenumbwe <x>: current move number starting at 1
+		- hashfull <x>: the hash is x permill full, the engine should send this info regularly
+
 	
 
 Example

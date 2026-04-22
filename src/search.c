@@ -41,6 +41,15 @@ typedef struct {
 	char halt;	// did search halt (either timeout or stop request)
 } Search_Result;
 
+// transposition table entry
+typedef struct {
+	char active;	// is entry populated with real data
+	ULL hash;	// node hash
+	char depth;	// depth of node
+	NODE_TYPE nt;
+	int eval;	// node eval 
+} TT_Entry;
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Static Search Variables
 static ULL nodes_since_info_send;		// nodes since last time node info was sent
@@ -50,13 +59,14 @@ static ULL search_start_time;			// start time of search
 // modify transposition table size to control memory usage
 // table size must be power of 2 for fast modulo
 // update TTMOD accordingly
-#define TTABLE_SIZE 8388608
+#define TTABLE_SIZE 4194304
 // bit mask to translate hash to address within TABLE_SIZE
 // mask the lower part of hash with number of bits needed to represent
 // TTABLE_SIZE
-#define TTMOD 0b11111111111111111111111ull
+#define TTMOD 0b1111111111111111111111ull
 TT_Entry ttable[TTABLE_SIZE];		// transposition table
 					// should be wiped before new game
+int hash_entries_active;
 
 ////////////////////////////////////////////////////////////////////////////////
 /// FUNCTIONS
@@ -69,19 +79,28 @@ static TT_Entry tt_search(void) {
 // add current position to transposition table
 static void tt_add(NODE_TYPE nt, int depth, int eval) {
 	ULL i = game_hash & TTMOD;
-	if (ttable[i].depth < depth)
+	if (!ttable[i].active) {
 		ttable[i] = (TT_Entry){1, game_hash, (char)depth, nt, eval};
+		hash_entries_active++;
+	}
+	else if (ttable[i].depth < depth) {
+		ttable[i] = (TT_Entry){1, game_hash, (char)depth, nt, eval};
+	}
 }
 
-// sends just node info
-static void send_node_info(void) {
+// Info sent regularly during search
+static void send_general_info(void) {
+	char info_buff[INFO_BUFF_SIZE];	
+	// send node info
 	ULL time_elapsed = platform_get_time_ms() - search_start_time;
 	if (!time_elapsed) time_elapsed = 1;
 	ULL nps = nodes_searched * 1000ULL / time_elapsed;
-
-	char info_buff[INFO_BUFF_SIZE];	
-	// format info string
 	snprintf(info_buff, INFO_BUFF_SIZE, "info nodes %lld nps %lld \n", nodes_searched, nps);
+	platform_send_uci_command(info_buff);
+
+	// send hashfull info
+	int hashfull = (int)(1000.0f * (float)hash_entries_active / (float)TTABLE_SIZE);
+	snprintf(info_buff, INFO_BUFF_SIZE, "info hashfull %d\n", hashfull);
 	platform_send_uci_command(info_buff);
 }
 
@@ -91,7 +110,7 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	nodes_searched++;
 	if(++nodes_since_info_send >= 10000000ULL) {
 		nodes_since_info_send = 0ULL;
-		send_node_info();
+		send_general_info();
 	}
 
 	// stand pat
@@ -414,4 +433,5 @@ void wipe_tt(void) {
 	for (int i = 0; i < TTABLE_SIZE; i++) {
 		ttable[i].active = 0;
 	}
+	hash_entries_active = 0;
 }
