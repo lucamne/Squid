@@ -247,7 +247,7 @@ void perft_test(int max_depth) {
 			return;
 		} else {
 			printf("Nodes found: %lli\n", n_nodes);
-			printf("Time elapsed: %llu.%llu\n", secs_elapsed, milli_elapsed);
+			printf("Time elapsed: %llu.%03llu\n", secs_elapsed, milli_elapsed);
 			printf("-----------------------\n");
 		}
 	}

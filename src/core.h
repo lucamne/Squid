@@ -52,14 +52,6 @@ typedef enum {
 	LB		// lower bound
 } NODE_TYPE;
 
-// transposition table entry
-typedef struct {
-	char active;	// is entry populated with real data
-	ULL hash;	// node hash
-	char depth;	// depth of node
-	NODE_TYPE nt;
-	int eval;	// node eval 
-} TT_Entry;
 
 // direction of movement for a sliding piece
 // in address offsets
