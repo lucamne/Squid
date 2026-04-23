@@ -1,7 +1,10 @@
 #include "eval.h"
 #include "core.h"
 
-// Constants
+////////////////////////////////////////////////////////////////////////////////
+/// CONSTANTS
+
+// Value of pawns, knights, bishops, rooks, queens, and kings during middle and endgame
 const int MG_PIECE_VALS[6] = {82, 337, 365, 477, 1025, 0};
 const int EG_PIECE_VALS[6] = {94, 281, 297, 512, 936, 0};
 
@@ -12,14 +15,14 @@ const int GAME_PHASE_INC[12] = {0, 0, 1, 1, 1, 1, 2, 2, 4, 4, 0, 0};
 const int TRADE_DOWN = 10;	// Bonus for trading pieces when winning
 const int NPP = 200;		// No pawns penalty
 
-const int BISHOP_PAIR = 50;
-const int KNIGHT_PAIR = -50;
-const int ROOK_PAIR = -50;
+const int BISHOP_PAIR = 50;	// Bonus for having bishop pair
+const int KNIGHT_PAIR = -50;	// Penalty for having knight pair
+const int ROOK_PAIR = -50;	// Penalty for having rook pair
 
 const int MOB = 10;		// Mobility bonus
 const int DI = 50;		// Doubled or isolated pawns penalty
 
-// piece square tables for mg and eg
+// Value modifiers for each piece type on each square in middle and endgame
 int mg_pawn_table[64] = {
 	0,   0,   0,   0,   0,   0,  0,   0,
 	98, 134,  61,  95,  68, 126, 34, -11,
@@ -152,6 +155,25 @@ int eg_king_table[64] = {
 	-53, -34, -21, -11, -28, -14, -24, -43
 };
 
+// Convert a 120 based address to a 64 based address
+int s120_to_64[120] = {
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+	-1,  0,  1,  2,  3,  4,  5,  6,  7, -1, 
+	-1,  8,  9, 10, 11, 12, 13, 14, 15, -1, 
+	-1, 16, 17, 18, 19, 20, 21, 22, 23, -1, 
+	-1, 24, 25, 26, 27, 28, 29, 30, 31, -1, 
+	-1, 32, 33, 34, 35, 36, 37, 38, 39, -1, 
+	-1, 40, 41, 42, 43, 44, 45, 46, 47, -1, 
+	-1, 48, 49, 50, 51, 52, 53, 54, 55, -1, 
+	-1, 56, 57, 58, 59, 60, 61, 62, 63, -1, 
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+	-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// SHARED EVAL MEMORY
+
 // Square eval for each piece
 // Pieces are ordered WP, BP, WN, BN, WB, BB, WR, BR, WQ, BQ, WK, BK
 int mg_piece_sq[12][64];
@@ -174,6 +196,9 @@ int* eg_piece_tables[6] = {
 	eg_queen_table,
 	eg_king_table
 };
+
+////////////////////////////////////////////////////////////////////////////////
+/// STATIC FUNCTIONS
 
 // calculate the number of pseudo legal white pawn moves 
 static int wp_mobility(void) {
@@ -530,13 +555,6 @@ static int is_draw(void) {
 	return 0;
 }
 
-// Convert a 120 based address to 64 based address
-static int addr_to_64(int a) {
-	int r = addr_to_rank(a);
-	int f = addr_to_file(a);
-	return 8 * (8 - r) + f - 1;
-}
-
 // Evaluate piece square tables
 static int piece_square_eval(void) {
 	int game_phase = 0;
@@ -547,9 +565,12 @@ static int piece_square_eval(void) {
 		PIECE p = board[addr];
 		if (p <= OFF_BOARD)
 			continue;
+
 		game_phase += GAME_PHASE_INC[p - WPAWN];
-		int ms = mg_piece_sq[p - WPAWN][addr_to_64(addr)];
-		int es = eg_piece_sq[p - WPAWN][addr_to_64(addr)];
+
+		int a = s120_to_64[addr];
+		int ms = mg_piece_sq[p - WPAWN][a];
+		int es = eg_piece_sq[p - WPAWN][a];
 
 		if (check_color(p, WHITE)) {
 			mg_score += ms;
@@ -562,6 +583,12 @@ static int piece_square_eval(void) {
 	if (game_phase > 24) game_phase = 24;
 	return (mg_score * game_phase + eg_score *(24 - game_phase)) / 24;
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// EXTERNAL FUNCTIONS
+///
+/// Exposed in eval.h
+
 
 int evaluate(void) {
 	if (is_draw()) return 0;
