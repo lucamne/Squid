@@ -4,7 +4,7 @@ setlocal ENABLEDELAYEDEXPANSION
 REM set sources and outputs
 set SOURCES=src\windows_main.c src\engine.c src\move_gen.c src\board.c src\search.c src\eval.c
 set INCLUDE=%INCLUDE% /Isrc
-set OUTPUT=bin\squid-0.3.1.exe
+set OUTPUT=bin\squid.exe
 
 REM release build
 if "%~1"=="-r" (
@@ -21,13 +21,16 @@ if "%~1"=="-p" (
 )
 
 REM set flags
-set CFLAGS=/nologo /W4
+set CFLAGS=/nologo /W4 /DENGINE_VERSION=\"0.3.1\"
+
 if "%RELEASE%"=="1" (
     set CFLAGS=%CFLAGS% /O2 /DNDEBUG
     echo Building release
+
 ) else if "%PROFILE%"=="1" (
     set CFLAGS=%CFLAGS% /Zi /DNDEBUG
     echo Building profiling
+
 ) else (
     set CFLAGS=%CFLAGS% /Zi
     echo Building Debug
