@@ -96,6 +96,8 @@ static void uci_go(const char* cmd) {
 
 	ULL wtime = 0ULL;
 	ULL btime = 0ULL;
+	ULL winc = 0ULL;
+	ULL binc = 0ULL;
 	ULL movetime = 0ULL;
 	char infinite = 0;
 
@@ -131,6 +133,24 @@ static void uci_go(const char* cmd) {
 			int t = str_to_positive_int(cmd, ws);
 			if (t == -1) break;
 			else btime = (ULL)t;
+		} else if (next_token_eq(cmd, "winc")) {
+			ni = next_token_pos(cmd);
+			if (ni == -1) break;
+			cmd += ni;
+			// extract 'winc' number
+			int ws = next_whitespace(cmd);
+			int t = str_to_positive_int(cmd, ws);
+			if (t == -1) break;
+			else winc = (ULL)t;
+		} else if (next_token_eq(cmd, "binc")) {
+			ni = next_token_pos(cmd);
+			if (ni == -1) break;
+			cmd += ni;
+			// extract 'winc' number
+			int ws = next_whitespace(cmd);
+			int t = str_to_positive_int(cmd, ws);
+			if (t == -1) break;
+			else binc = (ULL)t;
 		} else if (next_token_eq(cmd, "infinite")) {
 			infinite = 1;
 		}
@@ -142,9 +162,9 @@ static void uci_go(const char* cmd) {
 	} else if (movetime > 0) {
 		*ms = movetime;
 	} else if (side_to_move == WHITE && wtime > 0) {
-		*ms = wtime / 20;
+		*ms = wtime / 20 + winc / 20;
 	} else if (side_to_move == BLACK && btime > 0) {
-		*ms = btime / 20;
+		*ms = btime / 20 + binc / 20;
 	}
 
 	platform_create_thread(run_search, (void*)ms);
