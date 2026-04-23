@@ -19,7 +19,7 @@
 #define ULL uint_fast64_t
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Types
+/// TYPES
 
 // Piece Types
 #define PIECE unsigned int
@@ -83,7 +83,7 @@ typedef struct {
 } Move;
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Engine State
+///  GLOBAL ENGINE MEMORY
 ///
 /// These variables are accessed and modified globally
 
@@ -147,7 +147,7 @@ int uci_search_active;			// is search running
 int uci_halt_requested;			// search halt is requested
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Core API
+/// CORE API
 ///
 /// Called by engine.c to execute UCI commands
 
@@ -222,7 +222,9 @@ void iterative_ab_search(ULL search_time);
 // Input search time in ms or 0 to search until halt signal
 
 ///////////////////////////////////////////////////////////////////////////////
-/// Engine Utilities
+/// STATIC ENGINE UTILITIES
+///
+/// Frequently accessed simple functions
 
 // Return 1 if piece p is color c
 // Return 0 if piece is EMPTY/OFFBOARD

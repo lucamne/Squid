@@ -5,6 +5,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+////////////////////////////////////////////////////////////////////////////////
+/// STATIC FUNCTIONS
 
 // Search in a seperate thread 
 // Input search time in ms or 0 for infinite search
@@ -171,7 +173,7 @@ static void uci_go(const char* cmd) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Engine API
+/// EXTERN FUNCTIONS
 /// 
 /// Defined in engine.h
 /// These functions are called by platform layer

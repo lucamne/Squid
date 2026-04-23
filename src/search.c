@@ -7,7 +7,7 @@
 #include <string.h>
 
 ///////////////////////////////////////////////////////////////////////////////
-/// TYPES
+/// CONSTANTS
 
 // used for lower and upper bounds in search
 // can be any value as long as sufficiently large
@@ -16,6 +16,9 @@
 // program behavior is undefined if these are too small
 #define MAX_VARIATION_LEN 256	// max variation length (depth)
 #define INFO_BUFF_SIZE 256	// max size of info string output
+
+///////////////////////////////////////////////////////////////////////////////
+/// TYPES
 
 // Contains variation line
 typedef struct {
@@ -51,7 +54,8 @@ typedef struct {
 } TT_Entry;
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Static Search Variables
+/// SHARED EVAL MEMORY
+
 static ULL nodes_since_info_send;		// nodes since last time node info was sent
 static ULL nodes_searched;			// number of nodes searched in current search
 static ULL search_start_time;			// start time of search
@@ -69,7 +73,7 @@ TT_Entry ttable[TTABLE_SIZE];		// transposition table
 int hash_entries_active;
 
 ////////////////////////////////////////////////////////////////////////////////
-/// FUNCTIONS
+/// STATIC FUNCTIONS
 
 // return table entry of current position
 static TT_Entry tt_search(void) {
@@ -148,6 +152,50 @@ static int quiesce(int alpha, int beta, char is_timed, ULL ms_cutoff) {
 	return best_value;
 }
 
+// send search info
+static void send_pv(int depth, int cp, ULL time_elapsed, ULL nodes, ULL nps, Variation* pv) {
+	ASSERT(pv);
+	char info_buff[INFO_BUFF_SIZE];	
+
+	// format info string
+	snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %d time %lld nodes %lld nps %lld pv ",
+			depth, cp, time_elapsed, nodes, nps);
+
+	// extract principle variation
+	int pos = strlen(info_buff);
+	for (int i = 0; i < pv->count; i++) {
+		mmove_to_str(pv->line[i], info_buff + pos);
+		if (info_buff[pos + 4] == ' ') {
+			pos += 5;
+		} else {
+			info_buff[pos + 5] = ' ';
+			pos += 6;
+		}
+	}
+	info_buff[pos - 1] = '\n';
+	info_buff[pos] = '\0';
+
+	platform_send_uci_command(info_buff);
+}
+
+static void send_bestmove(MMove bestmove) {
+	char info_buff[16];
+	cpy_chars(info_buff, "bestmove ", 9);
+	mmove_to_str(bestmove, info_buff + 9);
+	if (info_buff[13] == ' ') {
+		info_buff[13] = '\n';
+		info_buff[14] = '\0';
+	} else {
+		info_buff[14] = '\n';
+		info_buff[15] = '\0';
+	}
+	platform_send_uci_command(info_buff);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// EXTERN FUNCTIONS
+///
+/// Exposed in eval.h
 
 // perform alpha beta search to depth, stopping if ms_cutoff is reached
 // see AB_Params definition in "search.h" for description of parameters
@@ -304,46 +352,6 @@ Search_Result ab_search(AB_Params params) {
 	tt_add(nt, depth, best_score);
 
 	return res;
-}
-
-// send search info
-static void send_pv(int depth, int cp, ULL time_elapsed, ULL nodes, ULL nps, Variation* pv) {
-	ASSERT(pv);
-	char info_buff[INFO_BUFF_SIZE];	
-
-	// format info string
-	snprintf(info_buff, INFO_BUFF_SIZE, "info depth %d score cp %d time %lld nodes %lld nps %lld pv ",
-			depth, cp, time_elapsed, nodes, nps);
-
-	// extract principle variation
-	int pos = strlen(info_buff);
-	for (int i = 0; i < pv->count; i++) {
-		mmove_to_str(pv->line[i], info_buff + pos);
-		if (info_buff[pos + 4] == ' ') {
-			pos += 5;
-		} else {
-			info_buff[pos + 5] = ' ';
-			pos += 6;
-		}
-	}
-	info_buff[pos - 1] = '\n';
-	info_buff[pos] = '\0';
-
-	platform_send_uci_command(info_buff);
-}
-
-static void send_bestmove(MMove bestmove) {
-	char info_buff[16];
-	cpy_chars(info_buff, "bestmove ", 9);
-	mmove_to_str(bestmove, info_buff + 9);
-	if (info_buff[13] == ' ') {
-		info_buff[13] = '\n';
-		info_buff[14] = '\0';
-	} else {
-		info_buff[14] = '\n';
-		info_buff[15] = '\0';
-	}
-	platform_send_uci_command(info_buff);
 }
 
 void iterative_ab_search(ULL search_time) {

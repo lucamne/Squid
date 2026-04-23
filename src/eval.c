@@ -589,7 +589,6 @@ static int piece_square_eval(void) {
 ///
 /// Exposed in eval.h
 
-
 int evaluate(void) {
 	if (is_draw()) return 0;
 

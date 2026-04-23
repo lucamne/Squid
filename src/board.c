@@ -3,9 +3,10 @@
 #include "string_processing.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Pseudo-Random Number Generator
+/// PSEUDO-RANDOM NUMBER GENERATOR
 ///
 /// Used to generate zobrist keys
+
 #define PRNG_SEED 13503364562591410000 
 #define ROTATE(x,k) (((x)<<(k))|((x)>>(64-(k))))
 
@@ -36,7 +37,9 @@ static void prng_init(void) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Public Functions
+/// EXTERN FUNCTIONS
+///
+/// Exposed in core.h
 
 int load_position(char* fen) {
 	ASSERT(fen);

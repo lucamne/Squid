@@ -4,319 +4,7 @@
 #include "string_processing.h"
 
 ////////////////////////////////////////////////////////////////////////////////
-/// Functions
-
-// Return 1 if given square addr is attacked by color c
-// Otherwise return 0
-int is_square_attacked(int addr, COLOR c) {
-	ASSERT(on_board(addr));
-	ASSERT(c == WHITE || c == BLACK);
-
-	if (c == WHITE) {
-		if (board[addr + 9] == WPAWN || board[addr + 11] == WPAWN)
-			return 1;
-		if (		board[addr - 21] == WKNIGHT || 
-				board[addr - 19] == WKNIGHT ||
-				board[addr - 12] == WKNIGHT || 
-				board[addr -  8] == WKNIGHT ||
-				board[addr + 21] == WKNIGHT || 
-				board[addr + 19] == WKNIGHT ||
-				board[addr + 12] == WKNIGHT || 
-				board[addr +  8] == WKNIGHT)
-			return 1;
-		if (		board[addr - 11] == WKING || 
-				board[addr - 10] == WKING || 
-				board[addr - 9] == WKING || 
-				board[addr - 1] == WKING || 
-				board[addr + 1] == WKING ||
-				board[addr + 9] == WKING ||
-				board[addr + 10] == WKING ||
-				board[addr + 11] == WKING)
-			return 1;
-
-		// sliding checks
-		PIECE p;
-		int dir = -10;
-		int c_addr = addr + dir;
-		// up
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// down
-		dir = 10;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// left
-		dir = -1;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// right
-		dir = 1;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// ul
-		dir = -11;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// ur
-		dir = -9;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// dl
-		dir = 9;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// dr
-		dir = 11;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == WQUEEN || p == WBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-	} else {
-		if (board[addr - 9] == BPAWN || board[addr - 11] == BPAWN)
-			return 1;
-		if (		board[addr - 21] == BKNIGHT || 
-				board[addr - 19] == BKNIGHT ||
-				board[addr - 12] == BKNIGHT || 
-				board[addr -  8] == BKNIGHT ||
-				board[addr + 21] == BKNIGHT || 
-				board[addr + 19] == BKNIGHT ||
-				board[addr + 12] == BKNIGHT || 
-				board[addr +  8] == BKNIGHT)
-			return 1;
-		if (		board[addr - 11] == BKING || 
-				board[addr - 10] == BKING || 
-				board[addr - 9] == BKING || 
-				board[addr - 1] == BKING || 
-				board[addr + 1] == BKING ||
-				board[addr + 9] == BKING ||
-				board[addr + 10] == BKING ||
-				board[addr + 11] == BKING)
-			return 1;
-
-		// sliding checks
-		PIECE p;
-		int dir = -10;
-		int c_addr = addr + dir;
-		// up
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// down
-		dir = 10;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// left
-		dir = -1;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// right
-		dir = 1;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BROOK)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// ul
-		dir = -11;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// ur
-		dir = -9;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// dl
-		dir = 9;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-		// dr
-		dir = 11;
-		c_addr = addr + dir;
-		while (1) {
-			p = board[c_addr];
-			if (p == BQUEEN || p == BBISHOP)
-				return 1;
-			if (p == EMPTY)
-				c_addr += dir;
-			else
-				break;
-		}
-	}
-	return 0;
-}
-
-// Init move from addr sa to addr ta.
-// Return 1 iff move is legal and was initialized
-// Return 0 iff move is illegal and not initialzed
-//
-// Move memory is handled by caller.
-// Promotion is always set to EMPTY and must be manually changed by
-// caller if necassary.
-int init_move(Move* move, int sa, int ta) {
-	ASSERT(move);
-	ASSERT(on_board(sa) && on_board(ta));
-	ASSERT(check_color(board[sa], side_to_move));
-	ASSERT(!check_color(board[ta], side_to_move));
-
-	move->cap_piece = board[ta];
-	int cap_addr = ta;
-	// handle en passant capture
-	if (ta == ep_addr) {
-		if (board[sa] == WPAWN) {
-			ASSERT(board[ta + 10] == BPAWN);
-			move->cap_piece = BPAWN;
-			cap_addr = ta + 10;
-		}
-		else if (board[sa] == BPAWN) {
-			ASSERT(board[ta - 10] == WPAWN);
-			move->cap_piece = WPAWN;
-			cap_addr = ta - 10;
-		}
-	}
-
-	// check for king in check through pseudo make move
-	board[cap_addr] = EMPTY;
-	PIECE start_piece = board[sa];
-	board[sa] = EMPTY;
-	board[ta] = start_piece;
-	int ka;
-	int illegal = 0;
-
-	if (side_to_move == WHITE) {
-		ka = piece_addr[WKING][0];
-		if (ka == sa) ka = ta;
-		if (is_square_attacked(ka, BLACK)) illegal = 1;
-	} else {
-		ka = piece_addr[BKING][0];
-		if (ka == sa) ka = ta;
-		if (is_square_attacked(ka, WHITE)) illegal = 1;
-	}
-
-	board[ta] = EMPTY;
-	board[cap_addr] = move->cap_piece;
-	board[sa] = start_piece;
-	if (illegal) return 0;
-
-	move->mv.sa = sa;
-	move->mv.ta = ta;
-	move->castle_rights = castle_rights;
-	move->ep_addr = ep_addr;
-	move->halfmoves = halfmoves;
-	move->mv.promo = EMPTY;
-	move->game_hash = game_hash;
-	return 1;
-}
+/// TYPES
 
 // Return from a move generation helper to track number of moves
 // added to capture and non capture array
@@ -324,6 +12,9 @@ typedef struct {
 	int cap_moves;
 	int non_cap_moves;
 } Moves_Added;
+
+////////////////////////////////////////////////////////////////////////////////
+/// STATIC FUNCTION
 
 // Generate all pawn promotion moves for pawn at address sa to address ta.
 // Return number of moves added
@@ -869,52 +560,6 @@ static void mvv_lva(Move* ml, int mi) {
 		mvv_lva(ml + pivot + 1, mi - pivot - 1);
 }
 
-// Generate legal moves in a position
-// Caller is responsible for ml memory
-// Assume ml is large enough
-// Above assumptions are true for all move gen helper functions
-int gen_moves(Move* ml) {
-	ASSERT(ml);
-	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
-
-	int cap_moves = 0;
-	int non_cap_moves = 0;
-	Move non_captures[256];
-
-	Moves_Added o;
-	if (side_to_move == WHITE) 
-		o = gen_wp_moves(ml + cap_moves, non_captures + non_cap_moves);
-	else
-		o = gen_bp_moves(ml + cap_moves, non_captures + non_cap_moves);
-	cap_moves += o.cap_moves;
-	non_cap_moves += o.non_cap_moves;
-
-	o = gen_knight_moves(ml + cap_moves, non_captures + non_cap_moves);
-	cap_moves += o.cap_moves;
-	non_cap_moves += o.non_cap_moves;
-
-	o = gen_bishop_moves(ml + cap_moves, non_captures + non_cap_moves);
-	cap_moves += o.cap_moves;
-	non_cap_moves += o.non_cap_moves;
-
-	o = gen_rook_moves(ml + cap_moves, non_captures + non_cap_moves);
-	cap_moves += o.cap_moves;
-	non_cap_moves += o.non_cap_moves;
-
-	o = gen_queen_moves(ml + cap_moves, non_captures + non_cap_moves);
-	cap_moves += o.cap_moves;
-	non_cap_moves += o.non_cap_moves;
-
-	o = gen_king_moves(ml + cap_moves, non_captures + non_cap_moves);
-	cap_moves += o.cap_moves;
-	non_cap_moves += o.non_cap_moves;
-
-	mvv_lva(ml, cap_moves);
-
-	memcpy(ml + cap_moves, non_captures, non_cap_moves * sizeof(Move));
-	return cap_moves + non_cap_moves;
-}
-
 // Move piece at source address to target address
 // Input a logical true value for hash to perform hashing
 // Input a logical false value for hash to skip hashing
@@ -989,6 +634,368 @@ static void remove_piece(int a, int hash) {
 	if (hash) hash_piece(p, a);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+/// EXTERN FUNCTIONS
+///
+/// Exposed in core.h
+
+// Init move from addr sa to addr ta.
+// Return 1 iff move is legal and was initialized
+// Return 0 iff move is illegal and not initialzed
+//
+// Move memory is handled by caller.
+// Promotion is always set to EMPTY and must be manually changed by
+// caller if necassary.
+int init_move(Move* move, int sa, int ta) {
+	ASSERT(move);
+	ASSERT(on_board(sa) && on_board(ta));
+	ASSERT(check_color(board[sa], side_to_move));
+	ASSERT(!check_color(board[ta], side_to_move));
+
+	move->cap_piece = board[ta];
+	int cap_addr = ta;
+	// handle en passant capture
+	if (ta == ep_addr) {
+		if (board[sa] == WPAWN) {
+			ASSERT(board[ta + 10] == BPAWN);
+			move->cap_piece = BPAWN;
+			cap_addr = ta + 10;
+		}
+		else if (board[sa] == BPAWN) {
+			ASSERT(board[ta - 10] == WPAWN);
+			move->cap_piece = WPAWN;
+			cap_addr = ta - 10;
+		}
+	}
+
+	// check for king in check through pseudo make move
+	board[cap_addr] = EMPTY;
+	PIECE start_piece = board[sa];
+	board[sa] = EMPTY;
+	board[ta] = start_piece;
+	int ka;
+	int illegal = 0;
+
+	if (side_to_move == WHITE) {
+		ka = piece_addr[WKING][0];
+		if (ka == sa) ka = ta;
+		if (is_square_attacked(ka, BLACK)) illegal = 1;
+	} else {
+		ka = piece_addr[BKING][0];
+		if (ka == sa) ka = ta;
+		if (is_square_attacked(ka, WHITE)) illegal = 1;
+	}
+
+	board[ta] = EMPTY;
+	board[cap_addr] = move->cap_piece;
+	board[sa] = start_piece;
+	if (illegal) return 0;
+
+	move->mv.sa = sa;
+	move->mv.ta = ta;
+	move->castle_rights = castle_rights;
+	move->ep_addr = ep_addr;
+	move->halfmoves = halfmoves;
+	move->mv.promo = EMPTY;
+	move->game_hash = game_hash;
+	return 1;
+}
+
+// Return 1 if given square addr is attacked by color c
+// Otherwise return 0
+int is_square_attacked(int addr, COLOR c) {
+	ASSERT(on_board(addr));
+	ASSERT(c == WHITE || c == BLACK);
+
+	if (c == WHITE) {
+		if (board[addr + 9] == WPAWN || board[addr + 11] == WPAWN)
+			return 1;
+		if (		board[addr - 21] == WKNIGHT || 
+				board[addr - 19] == WKNIGHT ||
+				board[addr - 12] == WKNIGHT || 
+				board[addr -  8] == WKNIGHT ||
+				board[addr + 21] == WKNIGHT || 
+				board[addr + 19] == WKNIGHT ||
+				board[addr + 12] == WKNIGHT || 
+				board[addr +  8] == WKNIGHT)
+			return 1;
+		if (		board[addr - 11] == WKING || 
+				board[addr - 10] == WKING || 
+				board[addr - 9] == WKING || 
+				board[addr - 1] == WKING || 
+				board[addr + 1] == WKING ||
+				board[addr + 9] == WKING ||
+				board[addr + 10] == WKING ||
+				board[addr + 11] == WKING)
+			return 1;
+
+		// sliding checks
+		PIECE p;
+		int dir = -10;
+		int c_addr = addr + dir;
+		// up
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// down
+		dir = 10;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// left
+		dir = -1;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// right
+		dir = 1;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// ul
+		dir = -11;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// ur
+		dir = -9;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// dl
+		dir = 9;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// dr
+		dir = 11;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == WQUEEN || p == WBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+	} else {
+		if (board[addr - 9] == BPAWN || board[addr - 11] == BPAWN)
+			return 1;
+		if (		board[addr - 21] == BKNIGHT || 
+				board[addr - 19] == BKNIGHT ||
+				board[addr - 12] == BKNIGHT || 
+				board[addr -  8] == BKNIGHT ||
+				board[addr + 21] == BKNIGHT || 
+				board[addr + 19] == BKNIGHT ||
+				board[addr + 12] == BKNIGHT || 
+				board[addr +  8] == BKNIGHT)
+			return 1;
+		if (		board[addr - 11] == BKING || 
+				board[addr - 10] == BKING || 
+				board[addr - 9] == BKING || 
+				board[addr - 1] == BKING || 
+				board[addr + 1] == BKING ||
+				board[addr + 9] == BKING ||
+				board[addr + 10] == BKING ||
+				board[addr + 11] == BKING)
+			return 1;
+
+		// sliding checks
+		PIECE p;
+		int dir = -10;
+		int c_addr = addr + dir;
+		// up
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// down
+		dir = 10;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// left
+		dir = -1;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// right
+		dir = 1;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BROOK)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// ul
+		dir = -11;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// ur
+		dir = -9;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// dl
+		dir = 9;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+		// dr
+		dir = 11;
+		c_addr = addr + dir;
+		while (1) {
+			p = board[c_addr];
+			if (p == BQUEEN || p == BBISHOP)
+				return 1;
+			if (p == EMPTY)
+				c_addr += dir;
+			else
+				break;
+		}
+	}
+	return 0;
+}
+
+// Generate legal moves in a position
+// Caller is responsible for ml memory
+// Assume ml is large enough
+// Above assumptions are true for all move gen helper functions
+int gen_moves(Move* ml) {
+	ASSERT(ml);
+	ASSERT(side_to_move == WHITE || side_to_move == BLACK);
+
+	int cap_moves = 0;
+	int non_cap_moves = 0;
+	Move non_captures[256];
+
+	Moves_Added o;
+	if (side_to_move == WHITE) 
+		o = gen_wp_moves(ml + cap_moves, non_captures + non_cap_moves);
+	else
+		o = gen_bp_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_knight_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_bishop_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_rook_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_queen_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	o = gen_king_moves(ml + cap_moves, non_captures + non_cap_moves);
+	cap_moves += o.cap_moves;
+	non_cap_moves += o.non_cap_moves;
+
+	mvv_lva(ml, cap_moves);
+
+	memcpy(ml + cap_moves, non_captures, non_cap_moves * sizeof(Move));
+	return cap_moves + non_cap_moves;
+}
 
 // Revert board state to previous move using Move used to generate
 // most recent move.
@@ -1228,20 +1235,6 @@ void make_move(Move* move) {
 	history[history_cnt++] = game_hash;
 }
 
-ULL perft(int d) {
-	Move move_list[256];
-	int n_moves = gen_moves(move_list);
-	if (d == 1) return n_moves;
-
-	unsigned long long c = 0;
-	for (int i = 0; i < n_moves; i++) {
-		make_move(move_list + i);
-		c += perft(d - 1);
-		unmake_move(move_list + i);
-	}
-	return c;
-}
-
 int make_manual_move(const char* mv, int len) {
 	if (!mv) return 1;
 	if (len < 4 || len > 5) return 1;
@@ -1285,4 +1278,18 @@ int make_manual_move(const char* mv, int len) {
 		}
 	}
 	return 1;
+}
+
+ULL perft(int d) {
+	Move move_list[256];
+	int n_moves = gen_moves(move_list);
+	if (d == 1) return n_moves;
+
+	unsigned long long c = 0;
+	for (int i = 0; i < n_moves; i++) {
+		make_move(move_list + i);
+		c += perft(d - 1);
+		unmake_move(move_list + i);
+	}
+	return c;
 }
